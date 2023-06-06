@@ -225,7 +225,7 @@ class CutTool():
 
     def loadImage(self):
         # загрузить изображение
-        self.img = Image.open("/media/sadko/1b32d2c7-3fcf-4c94-ad20-4fb130a7a7d4/PLAYGROUND/above_ground/test.png")
+        self.img = Image.open("test.png")
         size = self.img.size
         self.factor = max(size[0]/10000., size[1]/10000., 1.)
         self.img = self.img.resize((int(size[0]/self.factor), int(size[1]/self.factor)))
