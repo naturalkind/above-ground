@@ -39,6 +39,26 @@ from scipy import interpolate
 # https://stackoverflow.com/questions/21566610/crop-out-partial-image-using-numpy-or-scipy
 # https://stackoverflow.com/questions/36921249/drawing-angled-rectangles-in-opencv
 
+# детекторы дискрипторы
+# https://datahacker.rs/feature-matching-methods-comparison-in-opencv/
+# https://habr.com/ru/companies/solarsecurity/articles/580488/
+# https://habr.com/ru/articles/516116/
+# https://www.programmersought.com/article/443410229012/ simple error
+# https://habr.com/ru/companies/coptertime/articles/373911/
+# https://habr.com/ru/articles/403389/
+# https://stackoverflow.com/questions/38491959/how-to-apply-ransac-in-python-opencv
+# https://docs.opencv.org/3.4/d1/de0/tutorial_py_feature_homography.html
+# https://magamig.github.io/posts/accurate-image-alignment-and-registration-using-opencv/
+
+# оптический поток
+# https://mpolinowski.github.io/docs/IoT-and-Machine-Learning/ML/2021-12-10--opencv-optical-flow-tracking/2021-12-10/
+
+# создание панорам
+# http://matthewalunbrown.com/papers/ijcv2007.pdf
+# https://pyimagesearch.com/2016/01/11/opencv-panorama-stitching/
+# https://datahacker.rs/005-how-to-create-a-panorama-image-using-opencv-with-python/
+# https://russianblogs.com/article/31711623484/
+
 def chunks(lst, count):
     start = 0
     for i in range(count):
