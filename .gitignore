@@ -1,5 +1,7 @@
+media-temp/*
+data/*
+results
 orto.jpg
 env
 venv
-cut_parts
 *.pyc

@@ -27,57 +27,42 @@ class DATA(object):
                       if ".jpeg" in file.lower(): 
                           self.file[file.split(".")[0]] = [os.path.join(r, file)]
  
- 
-#def match_features(key_points_for_all, descriptor_for_all, MRT, image_for_all, is_show=None):
-#    """
-#    match features
-#    :param key_points_for_all:
-#    :param descriptor_for_all:
-#    :param MRT: Ratio Test
-#    :param image_for_all:
-#    :param is_show:
-#    :return:
-#    """
-#    if is_show == None:
-#        is_show = False
-#    else:
-#        is_show = True
-# 
-#    bf = cv2.BFMatcher(cv2.NORM_L2)
-#    matches_for_all = []
-#    for i in range(len(descriptor_for_all) - 1):
-#        # Feature matching can try many ways
-#        knn_matches = bf.knnMatch(descriptor_for_all[i], descriptor_for_all[i + 1], k=2)
-#        good_matches = []
-#        for m, n in knn_matches:
-#            if m.distance < MRT * n.distance:
-#                Good_matches.append ([m]) # Mainly here to add parentheses
-# 
-#        matches_for_all.append(np.array(good_matches))
-# 
-#        if is_show:
-#            img_matches = np.empty((max(image_for_all[i].shape[0], image_for_all[i+1].shape[0]),
-#                                    image_for_all[i].shape[1] + image_for_all[i+1].shape[1], 3), dtype=np.uint8)
-#            cv2.drawMatchesKnn(image_for_all[i], key_points_for_all[i], image_for_all[i+1], key_points_for_all[i+1],
-#                               good_matches, img_matches)
-#            cv2.imshow("matches", img_matches)
-#            cv2.waitKey(1500)
- 
+def warpImages(img1, img2, H):
+    rows1, cols1 = img1.shape[:2]
+    rows2, cols2 = img2.shape[:2]
 
- 
- 
- 
-                          
+    list_of_points_1 = np.float32([[0,0], [0, rows1],[cols1, rows1], [cols1, 0]]).reshape(-1, 1, 2)
+    temp_points = np.float32([[0,0], [0,rows2], [cols2,rows2], [cols2,0]]).reshape(-1,1,2)
+
+    # When we have established a homography we need to warp perspective
+    # Change field of view
+    list_of_points_2 = cv2.perspectiveTransform(temp_points, H)
+
+    list_of_points = np.concatenate((list_of_points_1,list_of_points_2), axis=0)
+
+    [x_min, y_min] = np.int32(list_of_points.min(axis=0).ravel() - 0.5)
+    [x_max, y_max] = np.int32(list_of_points.max(axis=0).ravel() + 0.5)
+
+    translation_dist = [-x_min,-y_min]
+
+    H_translation = np.array([[1, 0, translation_dist[0]], [0, 1, translation_dist[1]], [0, 0, 1]])
+
+    output_img = cv2.warpPerspective(img2, H_translation.dot(H), 
+                                    (x_max-x_min, y_max-y_min))
+    output_img[translation_dist[1]:rows1+translation_dist[1],
+               translation_dist[0]:cols1+translation_dist[0]] = img1
+
+    return output_img                          
                           
 image_parts = DATA()
 image_parts.parseIMG("cut_parts")
 sift = cv2.xfeatures2d.SIFT_create()
 
 #print (image_parts.file)
-img_left = cv2.imread(image_parts.file["20_part"][0], 0)
+img_left = cv2.imread(image_parts.file["20_part"][0])#, 0)
 features_left, left_descriptors = sift.detectAndCompute(img_left, None) # -> keypoints, descriptors
 
-img_right = cv2.imread(image_parts.file["40_part"][0], 0)
+img_right = cv2.imread(image_parts.file["40_part"][0])#, 0)
 features_right, right_descriptors = sift.detectAndCompute(img_right, None) # -> keypoints, descriptors
 print (img_left.shape, len(features_left), len(features_right))
 
@@ -92,8 +77,6 @@ def show_futeres(img, features):
 
 show_futeres(img_right, features_right)
 show_futeres(img_left, features_left)
-matcher = cv2.BFMatcher()
-
 
 KNN = 2
 LOWE = 0.7
@@ -104,19 +87,55 @@ matcher = cv2.FlannBasedMatcher({'algorithm': 0, 'trees': TREES}, {'checks': CHE
 matches = matcher.knnMatch(left_descriptors, right_descriptors, k=KNN)
 
 positive = []
+right_matchs = []
+left_matchs = []
+good = []
 for left_match, right_match in matches:
     if left_match.distance < LOWE * right_match.distance:
+        print (dir(left_match), left_match.distance)
+        left_matchs.append(left_match)
+        right_matchs.append(right_match)
         positive.append([left_match])
+        good.append(left_match)
 #print (len(positive))#, matches[1][1].distance)
 
-img_matches = np.empty((max(img_left.shape[0], img_right.shape[0]), 
-                            img_left.shape[1] + img_right.shape[1], 3), dtype=np.uint8)
-cv2.drawMatchesKnn(img_left, features_left, img_right, features_right, positive, img_matches) # None
 
-#SIFT_matches = cv2.drawMatchesKnn(img_left, features_left, img_right, features_right, positive, None, flags=2)
-#cv2.imshow("show", SIFT_matches)
-cv2.imshow("show", img_matches)
+SIFT_matches = cv2.drawMatchesKnn(img_left, features_left, img_right, features_right, positive, None, flags=2)
+cv2.imshow("show", SIFT_matches)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
+#Вычисляет оптимальное ограниченное аффинное преобразование с 4 степенями свободы между двумя наборами двумерных точек.
+# (InputArray from, InputArray to, OutputArray inliers=noArray(), int method=RANSAC, double ransacReprojThreshold=3, size_t maxIters=2000, двойное доверие=0,99, size_t RefineIters=10)
+
+
+left_matchs = np.float32([features_left[m.queryIdx].pt for m in good]).reshape(-1,1,2)
+right_matchs = np.float32([features_right[m.trainIdx].pt for m in good]).reshape(-1,1,2)
+
+#H, _ = cv2.estimateAffinePartial2D(right_matchs, left_matchs, False)
+H, _ = cv2.findHomography(right_matchs, left_matchs, cv2.RANSAC, 5.0)
+print (H, img_left.shape)
+
+
+#h, w, c = img_right.shape
+#warped = cv2.warpPerspective(img_left, H, (w, h), 
+#                             borderMode=cv2.BORDER_CONSTANT, 
+#                             borderValue=(0, 0, 0, 0))
+                             
+
+#warped = cv2.warpAffine(img_left, H, (w, h))
+
+#warped = cv2.perspectiveTransform(temp_points, H)
+
+warped = warpImages(img_left, img_right, H)
+print (warped.shape)
+#output = np.zeros((h, w, 3), np.uint8)
+#alpha = warped[:, :, 2] / 255.0
+#output[:, :, 0] = (1. - alpha) * img_right[:, :, 0] + alpha * warped[:, :, 0]
+#output[:, :, 1] = (1. - alpha) * img_right[:, :, 1] + alpha * warped[:, :, 1]
+#output[:, :, 2] = (1. - alpha) * img_right[:, :, 2] + alpha * warped[:, :, 2]
+
+cv2.imshow("show", warped)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
