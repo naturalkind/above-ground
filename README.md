@@ -10,6 +10,8 @@ python3 main.py
 python3 glue_part.py
 ```
 
+![Иллюстрация к проекту](https://github.com/naturalkind/above-ground/blob/main/media-info/%D0%A1%D0%BB%D0%B0%D0%B9%D0%B4%201.png)
+
 ### Нужно сделать
 - [x] нарезать разного размера изображение, из снимка местности   
 - [ ] вносить искажения   
