@@ -55,7 +55,7 @@ def warpImages(img1, img2, H):
     return output_img                          
                           
 image_parts = DATA()
-image_parts.parseIMG("cut_parts")
+image_parts.parseIMG("data/cut_parts")
 sift = cv2.xfeatures2d.SIFT_create()
 
 KNN = 2
@@ -90,14 +90,12 @@ def func_rec(ID):
                 features_right, right_descriptors = sift.detectAndCompute(img_right, None)
                 
                 matches = matcher.knnMatch(left_descriptors, right_descriptors, k=KNN)
-                positive = []
                 good = []
                 for left_match, right_match in matches:
                     if left_match.distance < LOWE * right_match.distance:
-                        positive.append([left_match])
                         good.append(left_match)
 
-                if len(good) > 40:
+                if int(100*(len(good)/len(matches))) > 40:
                     if keys_list_img[ix] != keys_list_img[iix]:
                         print (keys_list_img[ix], keys_list_img[iix])
     #                    del image_parts.file[ii]

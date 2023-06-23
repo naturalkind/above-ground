@@ -38,7 +38,7 @@ def crop_rect(img, rect, ix):
     cut_img = cv2.getRectSubPix(img_rot, size, center)
     
     # сохранить часть изображения
-    cv2.imwrite(f'cut_parts/{ix}_part.jpg', cut_img)
+    cv2.imwrite(f'data/cut_parts/{ix}_part.jpg', cut_img)
     
     cv2.imshow('cut_img', cut_img)
     time.sleep(0.08)
@@ -201,7 +201,7 @@ class CutTool():
 
     def loadImage(self):
         # загрузить изображение
-        self.img = Image.open("test.png")
+        self.img = Image.open("media-info/test.png")
         size = self.img.size
         self.factor = max(size[0]/10000., size[1]/10000., 1.)
         self.img = self.img.resize((int(size[0]/self.factor), int(size[1]/self.factor)))

@@ -55,7 +55,7 @@ def warpImages(img1, img2, H):
     return output_img                          
                           
 image_parts = DATA()
-image_parts.parseIMG("cut_parts")
+image_parts.parseIMG("data/cut_parts")
 sift = cv2.xfeatures2d.SIFT_create()
 
 #print (image_parts.file)
