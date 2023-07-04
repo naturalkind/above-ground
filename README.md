@@ -26,6 +26,9 @@ python3 glue_part.py
 
 #### интересно
 * https://habr.com/ru/articles/650013/
+* https://tanzdire.blogspot.com/2021/07/simultaneous-localization-and-mapping.html
+* https://towardsdatascience.com/netvlad-cnn-architecture-for-weakly-supervised-place-recognition-ce64b08bebaf
+* https://russianblogs.com/article/54282601005/
 
 #### спрямление длина кривой
 * https://stackoverflow.com/questions/5228383/how-do-i-find-the-distance-between-two-points
@@ -85,9 +88,13 @@ python3 glue_part.py
 * https://russianblogs.com/article/2855376100/
 * https://digitrain.ru/articles/330620/
 * https://machinelearningmastery.ru/image-panorama-stitching-with-opencv-2402bde6b46c/
+* https://hypjudy.github.io/2017/05/10/panorama-image-stitching/
 * https://www.programmersought.com/article/63932526410/
 * https://russianblogs.com/article/84121976861/
 * https://russianblogs.com/article/62961265120/ - с++ реализация
+
+#### соединять пазлы 
+* https://deepai.org/publication/jigsawgan-self-supervised-learning-for-solving-jigsaw-puzzles-with-generative-adversarial-networks
 
 #### создание панорам код
 * https://github.com/fuenwang/PanoramaUtility
@@ -96,11 +103,16 @@ python3 glue_part.py
 * https://github.com/aartighatkesar/Image-Mosaicing
 * https://github.com/RyanWu2233/Panorama
 * https://github.com/sheoranhimansh/AutoPanorama - хорошая реализация с использованием нескольких подходов
+* https://github.com/kregmi/cross-view-image-matching - подход на основе нейронных сетей
 
 #### готовые решения
+* http://introlab.github.io/rtabmap/
+* https://github.com/matlabbe/rtabmap_drone_example
 * https://github.com/generalized-intelligence/GAAS
-* https://github.com/kregmi/cross-view-image-matching
+* https://github.com/davidmball/ratslam
 * https://github.com/pacogarcia3/hta0-horizontal-robot-arm
 * https://github.com/amov-lab/Prometheus
 * https://github.com/stytim/Drone_Visual_SLAM
 * https://github.com/matlabbe/rtabmap_drone_example
+* https://github.com/vijay4313/SLAM-using-GTSAM
+* https://github.com/khazit/CrazySLAM
