@@ -18,7 +18,21 @@ python3 glue_part.py
 - [x] использовать дискрипторы для воссоздания изображения   
 - [ ] обучать нейронную сеть   
 - [ ] графф для сортировки изображений в нужной последовательности   
+- [x] установить gazebo   
+- [ ] установить airsim   
+- [ ] подключить к симуляторам px4/контроллер   
+- [ ] получать сигналы контроллера   
+- [ ] изучить возможность применения blender   
 
+#### симулятораы
+* https://docs.px4.io/main/en/simulation/
+* https://github.com/hazkaz/blender-quadcopter-fpv
+
+#### обучения с подкреплением
+* https://github.com/carlo98/precision_landing_shaping_RL
+* https://github.com/observantbot/drone1D_ddpg
+* https://github.com/yoavalon/QuadcopterReinforcementLearning
+ 
 #### tkinter рисование с зажатой кнопкой
 * https://stackoverflow.com/questions/34522095/gui-button-hold-down-tkinter
 * http://pythonicway.com/python-examples/python-gui-examples/28-python-paint
@@ -116,3 +130,5 @@ python3 glue_part.py
 * https://github.com/matlabbe/rtabmap_drone_example
 * https://github.com/vijay4313/SLAM-using-GTSAM
 * https://github.com/khazit/CrazySLAM
+* https://github.com/carlo98/precision_landing_shaping_RL
+* https://github.com/hku-mars/crossgap_il_rl
