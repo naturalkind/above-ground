@@ -1,9 +1,17 @@
 media-temp
 AutoPanorama
+AirSim
+UnrealEngine-4.27.0-release
 twitchslam
 Robotics
 results
 orto.jpg
 env
 venv
+data/granitnoe.dae
+data/Street.FBX
+data/AirSimNH.zip
+data/blender_granitnoe.blend
+UnrealEngine-4.27.0-release.tar.gz
+UnrealEngine-release.zip
 *.pyc
