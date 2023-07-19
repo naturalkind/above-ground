@@ -1,6 +1,3 @@
-# получение признаков из изображений для создания различного функционала   
-Для автономного средства важно выбрать надежный и быстрый алгоритм   
-
 #### детекторы дискрипторы
 * https://oil-mcut.github.io/chapter-7/
 * https://datahacker.rs/feature-matching-methods-comparison-in-opencv/
@@ -13,15 +10,7 @@
 * https://docs.opencv.org/3.4/d1/de0/tutorial_py_feature_homography.html
 * https://magamig.github.io/posts/accurate-image-alignment-and-registration-using-opencv/
 * https://github.com/williamhyin/SFND_2D_Feature_Tracking
-
-#### создание панорам код
-* https://github.com/fuenwang/PanoramaUtility
-* https://github.com/ndvinh98/Panorama/
-* https://github.com/VCL3D/DeepPanoramaLighting
-* https://github.com/aartighatkesar/Image-Mosaicing
-* https://github.com/RyanWu2233/Panorama
-* https://github.com/sheoranhimansh/AutoPanorama - хорошая реализация с использованием нескольких подходов
-* https://github.com/kregmi/cross-view-image-matching - подход на основе нейронных сетей
+* https://habr.com/ru/companies/innopolis/articles/653929/
 
 #### спрямление длина кривой
 * https://stackoverflow.com/questions/5228383/how-do-i-find-the-distance-between-two-points
@@ -45,6 +34,11 @@
 * https://stackoverflow.com/questions/10969170/rotation-angle-of-the-perspective-matrix
 * https://stackoverflow.com/questions/58538984/how-to-get-the-rotation-angle-from-findhomography
 
+#### tkinter рисование с зажатой кнопкой
+* https://stackoverflow.com/questions/34522095/gui-button-hold-down-tkinter
+* http://pythonicway.com/python-examples/python-gui-examples/28-python-paint
+* https://stackoverflow.com/questions/15736530/python-tkinter-rotate-image-animation
+
 #### получить координаты камеры
 * https://stackoverflow.com/questions/14444433/calculate-camera-world-position-with-opencv-python
 * https://www.fdxlabs.com/calculate-x-y-z-real-world-coordinates-from-a-single-camera-using-opencv/
@@ -62,6 +56,9 @@
 #### стабилизация изображения
 * https://datahacker.rs/006-advanced-computer-vision-video-stabilization/
 
+#### соединять пазлы 
+* https://deepai.org/publication/jigsawgan-self-supervised-learning-for-solving-jigsaw-puzzles-with-generative-adversarial-networks
+
 #### создание панорам
 * http://matthewalunbrown.com/papers/ijcv2007.pdf
 * https://pyimagesearch.com/2016/01/11/opencv-panorama-stitching/
@@ -75,9 +72,6 @@
 * https://russianblogs.com/article/84121976861/
 * https://russianblogs.com/article/62961265120/ - с++ реализация
 
-#### соединять пазлы 
-* https://deepai.org/publication/jigsawgan-self-supervised-learning-for-solving-jigsaw-puzzles-with-generative-adversarial-networks
-
 #### создание панорам код
 * https://github.com/fuenwang/PanoramaUtility
 * https://github.com/ndvinh98/Panorama/
@@ -86,4 +80,42 @@
 * https://github.com/RyanWu2233/Panorama
 * https://github.com/sheoranhimansh/AutoPanorama - хорошая реализация с использованием нескольких подходов
 * https://github.com/kregmi/cross-view-image-matching - подход на основе нейронных сетей
+
+#### готовые решения связанные с SLAM
+* http://introlab.github.io/rtabmap/
+* https://github.com/matlabbe/rtabmap_drone_example
+* https://github.com/generalized-intelligence/GAAS
+* https://github.com/davidmball/ratslam
+* https://github.com/pacogarcia3/hta0-horizontal-robot-arm
+* https://github.com/amov-lab/Prometheus
+* https://github.com/stytim/Drone_Visual_SLAM
+* https://github.com/matlabbe/rtabmap_drone_example
+* https://github.com/vijay4313/SLAM-using-GTSAM
+* https://github.com/khazit/CrazySLAM
+* https://github.com/carlo98/precision_landing_shaping_RL
+* https://github.com/hku-mars/crossgap_il_rl
+
+#### симулятораы и все связанное
+* https://docs.px4.io/main/en/simulation/
+* https://github.com/carla-simulator/carla
+* https://github.com/RobotecAI/ros2-for-unity
+* https://github.com/hazkaz/blender-quadcopter-fpv
+
+#### Проблемы AirSim
+* https://github.com/microsoft/AirSim/issues/4535
+
+#### обучения с подкреплением
+* https://github.com/carlo98/precision_landing_shaping_RL
+* https://github.com/observantbot/drone1D_ddpg
+* https://github.com/yoavalon/QuadcopterReinforcementLearning
+* https://github.com/RodgerLuo/CPS-Book-Chapter/tree/master
+* https://cetinkayakoc.net/docs/b11.pdf
+* https://arxiv.org/abs/2209.11094 - ускорение
+
+#### интересно
+* https://habr.com/ru/articles/650013/
+* https://tanzdire.blogspot.com/2021/07/simultaneous-localization-and-mapping.html
+* https://towardsdatascience.com/netvlad-cnn-architecture-for-weakly-supervised-place-recognition-ce64b08bebaf
+* https://russianblogs.com/article/54282601005/
+* https://digitrain.ru/articles/158301/
 
