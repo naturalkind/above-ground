@@ -15,3 +15,6 @@ data/blender_granitnoe.blend
 UnrealEngine-4.27.0-release.tar.gz
 UnrealEngine-release.zip
 *.pyc
+*.blend1
+*.blend
+*.fbx

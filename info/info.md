@@ -1,3 +1,6 @@
+#### Unreal руководства
+* https://github.com/mikeroyal/Unreal-Engine-Guide
+
 #### детекторы дискрипторы
 * https://oil-mcut.github.io/chapter-7/
 * https://datahacker.rs/feature-matching-methods-comparison-in-opencv/
@@ -50,7 +53,7 @@
 * https://mpolinowski.github.io/docs/IoT-and-Machine-Learning/ML/2021-12-10--opencv-optical-flow-tracking/2021-12-10/
 * https://github.com/philferriere/tfoptflow
 
-#### спектральная кластеризация
+#### спектральная кластеризацияhttps://github.com/mikeroyal/Unreal-Engine-Guide
 * https://calvinfeng.gitbook.io/machine-learning-notebook/unsupervised-learning/clustering/spectral_clustering
 
 #### стабилизация изображения
