@@ -7,40 +7,19 @@ def distance_vec(point1: Vector, point2: Vector) -> float:
     return (point2 - point1).length
 
 # получить обьект из сцены
+bpy.context.active_object.select_set(False)
 foto_obj = bpy.context.scene.objects[0]
 bpy.context.view_layer.objects.active = foto_obj
+foto_obj.select_set(True)
 
 # Выбрать все крайние грани
-bpy.ops.object.editmode_toggle()
 me = foto_obj.data
+bpy.ops.object.mode_set(mode="EDIT")
+bpy.ops.mesh.select_mode(type = 'EDGE')
+bpy.ops.mesh.select_all(action = 'SELECT')
 
-x, y, z = [ sum( [v.co[i] for v in me.vertices] ) for i in range(3)]
-count = float(len(me.vertices))
-center = foto_obj.matrix_world @ (Vector( (x, y, z ) ) / count )
-print (center)
-
-bm = bmesh.new()
-bm.from_mesh(me)
-bm.faces.ensure_lookup_table()
-
-dist_faces = []
-faces_id = []
-for i in range(len(bm.faces)):
-    me.polygons[i].select = False
-    face_location = bm.faces[i].calc_center_median()    
-    dist  = distance_vec(center, face_location)
-    print (face_location, dist)
-    dist_faces.append(dist)
-    faces_id.append(i)    
-
-max_dist = max(dist_faces)   
-idx = dist_faces.index(max_dist) 
-print (max(dist_faces), idx)
-
-me.edges[idx].select = True
-
-bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='EDGE')
-bpy.ops.mesh.select_similar(type='FACE', threshold=0.01)
+bpy.ops.mesh.beautify_fill()
+bpy.ops.mesh.normals_tools(mode="RESET")
 
 bpy.ops.mesh.extrude_region_move(MESH_OT_extrude_region={"use_normal_flip":False, 
                                                          "use_dissolve_ortho_edges":False, 
@@ -70,7 +49,4 @@ bpy.ops.mesh.extrude_region_move(MESH_OT_extrude_region={"use_normal_flip":False
                                                          "release_confirm":False, 
                                                          "use_accurate":False, 
                                                          "use_automerge_and_split":False})
-
-
-
 

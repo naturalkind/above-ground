@@ -20,23 +20,28 @@ UnrealEngine-4.27.0-release/Engine/Binaries/Linux/UE4Editor
 3. https://www.youtube.com/watch?v=Rx-aOHCfTOw   
 
 Способ 1, должен работать но не работает!
-1 импортируя в Blender .dae формет agisoft photoscan, данные изображения это byte color(RGBA с 8-битными положительными целыми значениями) для вершин углов гряни.
-2 дальше следую этой инструкции https://www.youtube.com/watch?v=eq8718t7ZJk&t=184s, экпортирую из Blender в .fbx формат, должно все работать,
-но не работает...
-3 unreal 4 отображает vert colors, но не отображать как метариал
-Изучаю в чем причина, и вот ответы:
-https://blenderartists.org/t/how-to-edit-color-attribute-type-from-vertex-color-to-face-corner-byte-color/1408417/8
-https://blender.stackexchange.com/questions/265945/i-cant-export-vertex-colors-anymore-in-blender-3-2
-Попробовал новую версию, тоже самое...
+1. импортируя в Blender .dae формет agisoft photoscan, данные изображения это byte color(RGBA с 8-битными положительными целыми значениями) для вершин углов гряни.   
+2. дальше следую этой инструкции https://www.youtube.com/watch?v=eq8718t7ZJk&t=184s, экпортирую из Blender в .fbx формат, должно все работать,
+но не работает...   
+3. unreal 4 отображает vert colors, но не отображать как метариал    
+Изучаю в чем причина, и вот ответы:   
+https://blenderartists.org/t/how-to-edit-color-attribute-type-from-vertex-color-to-face-corner-byte-color/1408417/8   
+https://blender.stackexchange.com/questions/265945/i-cant-export-vertex-colors-anymore-in-blender-3-2   
+Попробовал новую версию, тоже самое...   
 
-Способ 2
-1 в blender импортировал .dae   
-2 уменьшил полигоны, для увеличения быстродействия работы   
-3 "запекаю" из вершин углов граней изображение по UV сетке, так как небыло исходного изображения для использования в качестве текстуры
-4 из текстуры создаю материал
-5 экспортирую в Unreal
-не работает, в этом случае пишут что проблема 4 версии unreal
-В итоге сохранил изображение из 3 шага и загрузил отдельно
+Способ 2   
+1. в blender импортировал .dae   
+2. уменьшил полигоны, для увеличения быстродействия работы   
+3. "запекаю" из вершин углов граней изображение по UV сетке, так как небыло исходного изображения для использования в качестве текстуры   
+4. из текстуры создаю материал   
+5. экспортирую в Unreal   
+не работает, в этом случае пишут что проблема 4 версии unreal   
+В итоге сохранил изображение из 3 шага и загрузил отдельно   
+
+
+### Убрать дырки
+
+
 
 
 
@@ -45,7 +50,6 @@ https://epicgames.github.io/BlenderTools/send2ue/introduction/quickstart.html - 
 https://dtf.ru/gamedev/1044579-besplatnyy-level-dizayn-ili-kak-stroit-landshaft-v-realnom-vremeni-na-ue4 - проверить !!!   
 https://github.com/samorr/Computer-Vision-and-Photogrammetry   
 https://blender.stackexchange.com/questions/271985/how-to-bake-texture-to-vertex-colors   
-https://blender.stackexchange.com/questions/106199/how-to-find-non-manifold-edges   
 
 ### найти самые крайние рёбра
 ```
@@ -61,7 +65,7 @@ https://blender.stackexchange.com/questions/106199/how-to-find-non-manifold-edge
 https://www.youtube.com/watch?v=g7XKX3bm5ak&t=396s   
 https://vimeo.com/156786446   
 https://www.youtube.com/watch?v=dMUnKmz7u6s   
-https://www.youtube.com/watch?v=VtS9jS6X4xQ   
+https://www.youtube.com/watch?v=VtS9jS6X4xQ - создать текстуру из полигонов   
 https://www.youtube.com/watch?v=Rx-aOHCfTOw   
 https://www.youtube.com/watch?v=Mn8_Yfor4TA   
 https://www.youtube.com/watch?v=z5gYPaHSxoA   
