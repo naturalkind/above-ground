@@ -1,5 +1,27 @@
 #### Unreal руководства
 * https://github.com/mikeroyal/Unreal-Engine-Guide
+##### Ландшафт
+* https://ue4daily.com/blog/realistic-mountain-scenes-in-ue4
+* https://www.youtube.com/watch?v=dCE-m_f3OCU&t=38s
+* https://www.youtube.com/watch?v=otOPdOHWqWY
+##### Сплайны
+* https://www.youtube.com/watch?v=WHNOZyOuQv8
+* https://github.com/george536/Splines-and-3D-lines-Library-for-Unreal-Engine-4/tree/main
+* https://bluevoidstudios.com/spline-components-in-ue4/
+* https://unrealcpp.com/actor-line-trace/
+* https://forums.unrealengine.com/t/creating-splines-from-navigation-paths/135754/5
+* https://snorristurluson.github.io/VisualizingPaths/
+##### Уроки Blender   
+https://www.youtube.com/watch?v=g7XKX3bm5ak&t=396s   
+https://vimeo.com/156786446   
+https://www.youtube.com/watch?v=dMUnKmz7u6s   
+https://www.youtube.com/watch?v=VtS9jS6X4xQ - создать текстуру из полигонов   
+https://www.youtube.com/watch?v=Rx-aOHCfTOw   
+https://www.youtube.com/watch?v=Mn8_Yfor4TA   
+https://www.youtube.com/watch?v=z5gYPaHSxoA   
+https://www.youtube.com/watch?v=UXD97l7ZT0w   
+https://www.youtube.com/watch?v=eq8718t7ZJk&t=184s -должно все работать   
+https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отображения нормалей   
 
 #### детекторы дискрипторы
 * https://oil-mcut.github.io/chapter-7/
@@ -97,6 +119,8 @@
 * https://github.com/khazit/CrazySLAM
 * https://github.com/carlo98/precision_landing_shaping_RL
 * https://github.com/hku-mars/crossgap_il_rl
+* https://github.com/IeiuniumLux/Visual-SLAM
+* https://github.com/janinethoma/image_navigation_python
 
 #### симулятораы и все связанное
 * https://docs.px4.io/main/en/simulation/
