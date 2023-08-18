@@ -6,12 +6,30 @@
 * https://www.youtube.com/watch?v=otOPdOHWqWY
 ##### Сплайны
 * https://www.youtube.com/watch?v=WHNOZyOuQv8
-* https://github.com/george536/Splines-and-3D-lines-Library-for-Unreal-Engine-4/tree/main
 * https://bluevoidstudios.com/spline-components-in-ue4/
 * https://unrealcpp.com/actor-line-trace/
-* https://forums.unrealengine.com/t/creating-splines-from-navigation-paths/135754/5
-* https://snorristurluson.github.io/VisualizingPaths/
-##### Уроки Blender   
+* https://forums.unrealengine.com/t/creating-splines-from-navigation-paths/135754
+* https://snorristurluson.github.io/VisualizingPaths/   
+* https://www.youtube.com/watch?v=IIhAOmJ5bAo
+* https://www.youtube.com/watch?v=oYmfq1GJaMQ
+* https://www.youtube.com/watch?v=eKIiWa19EMI
+* https://www.youtube.com/watch?v=kJyWSzfwEk8
+* https://www.youtube.com/watch?v=udpvHos49Y4 - unreal 3.5
+* https://forums.unrealengine.com/t/trouble-implementing-splinemeshcomponents/105434
+* https://www.reddit.com/r/unrealengine/comments/mucy6f/ai_move_along_spline_c/
+* https://forums.unrealengine.com/t/whats-the-correct-way-to-add-spline-mesh-in-c/641213
+* https://forums.unrealengine.com/t/draw-predicted-movement-path-and-any-spline-trajectory/135518
+* https://russianblogs.com/article/41823512854/
+
+##### Log в консоль
+* https://www.chrismccole.com/blog/logging-in-ue4-cpp
+* https://unrealcommunity.wiki/logging-lgpidy6i#logging-using-ue_log
+#####
+* https://www.vikram.codes/blog/ai/01-basic-navigation   
+* https://gist.github.com/derofim/fa21005b04b01836cd92ec227d3fff57
+
+
+#### Уроки Blender   
 https://www.youtube.com/watch?v=g7XKX3bm5ak&t=396s   
 https://vimeo.com/156786446   
 https://www.youtube.com/watch?v=dMUnKmz7u6s   
