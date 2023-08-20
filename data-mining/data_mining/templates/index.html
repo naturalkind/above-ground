@@ -1,0 +1,371 @@
+<html>
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <title>загрузчик при помощи javascript/python </title>
+<body style="margin: 0;color: #9d9d9d;background: #fafafa!important;font-family:Arial;">
+        <div id="UploadBox">
+            <h2>Загрузчик</h2>
+            <span id='UploadArea'>
+                <label for="FileBox">Выберите файл: </label><input type="file" id="FileBox" onchange="load_image_profile(this)"><br>
+<!--                <label for="SE">Выберите класс: </label><select id="SE"></select>-->
+<!--                <button	type='button' id='UploadButton' class='Button'>Загрузить</button>-->
+            </span>
+<!--                <button	type='button' id='Process' class='Button'>Обработать</button>-->
+        </div>
+        <div id="BlockInfo">
+            <button	type='button' id='UploadButton' class='Button'>сохранить</button>
+            {% for d in class_data %}
+                <span class="class_data" onclick="pickClass(this);" atr-id="{{ d.id }}">{{ d.title }}</span>
+            {% endfor %}
+        </div>
+        <div id="SeeBox"s>
+            <canvas id='example' style="margin: 0 auto;position: relative;display: block;">Обновите браузер</canvas>
+        </div>
+
+    </body>
+
+<script type="text/javascript" charset="utf-8">
+document.getElementById('BlockInfo').style.display = "none";
+document.getElementById('SeeBox').style.display = "none";
+var UploadButton = document.getElementById('UploadButton');
+var canvas = document.getElementById('example');
+var ctx = canvas.getContext('2d');
+var class_info;
+var arr_coord = [];
+var SelectedFile;
+var dataURL_main;
+// загрузка изображения в canvas
+function load_image_profile(self) {
+    
+    var reader = new FileReader();
+    reader.onload = function(event){
+        var img = new Image();
+        img.onload = function(){
+            canvas.width = img.width;
+            canvas.height = img.height;
+            dataURL_main = reader.result;
+<!--            ctx.drawImage(img, 0, 0);-->
+        }
+        canvas.style.backgroundImage = 'url(' + event.target.result + ')';
+        img.src = event.target.result;
+        SelectedFile = self.files[0].name;
+        console.log("....", SelectedFile);
+        if (document.body.offsetHeight > document.body.offsetWidth) {
+            img.style.maxHeight = document.body.offsetHeight;
+            img.style.maxWidth = document.body.offsetWidth;
+            img.style.width = "100%";    
+        } else {
+            img.style.maxHeight = document.body.offsetHeight;
+            img.style.maxWidth = document.body.offsetWidth;
+        }
+<!--        document.getElementById('UploadBox').style.display = "none"-->
+        document.getElementById('SeeBox').style.display = "block";
+        document.getElementById('BlockInfo').style.display = "block";
+        
+    }
+    reader.readAsDataURL(self.files[0]);
+}
+// сохранение данных в сервер
+var ws_main;
+var indicator_ws;
+var IP_ADDR = window.location.hostname;
+var PORT = "7777";
+function start_main() {
+    ws_main = new WebSocket("ws://"+ IP_ADDR +":"+PORT+"/");
+    ws_main.onmessage = function(e) {
+        var message_data = JSON.parse(event.data);
+        if (message_data["status"]=="mainpost") {
+            console.log("WS from server")
+        }
+    };
+    ws_main.onclose = function(e){
+        console.log(e.code)
+        // Try to reconnect in 5 seconds
+        if (indicator_ws != "close") {
+            setTimeout(function() {start_main()}, 5000);
+        }
+    };
+    ws_main.onerror = function(e){
+        if (ws_main.readyState==3) {
+            indicator_ws = "close";
+            alert("ОШИБКА ПОДКЛЮЧЕНИЯ! Установите последнюю версию браузера или отключите VPN")
+        }
+        console.log("Error", e, ws_main.readyState);
+    };
+}
+
+start_main()
+
+send_server = (e) => {
+    console.log(".....", e);
+    if (ws_main.readyState != WebSocket.OPEN) {
+        return false;
+    }  
+<!--    let dataURL_main = canvas.toDataURL("image/png");-->
+    let event = { title : "",
+                  text: "",
+                  name_image: SelectedFile,
+                  image: dataURL_main,
+                  arr_coord: arr_coord,
+                  os_info: window.navigator.userAgent,
+                  event: "mainpost",
+    };
+        
+    let data = JSON.stringify(event); 
+    ws_main.send(data);   
+    arr_coord.length=0; 
+}
+
+UploadButton.onclick = send_server
+
+// выбор класса 
+function pickClass(self) {
+    console.log(self.innerText);
+<!--    self.style.-->
+    canvas_box.class_id = self.getAttribute('atr-id');
+    canvas_box.text = self.innerText;
+    canvas_box.clearCanvas();
+    canvas_box.draw(offsetX, offsetY);
+}
+
+
+// выделяющая рамка https://9to5tutorial.com/javascript-creating-and-drawing-bounding-boxes-in-canvas
+class CanvasVox {
+    constructor(canvas, ctx) {
+        this.canvas = canvas;
+        this.ctx = ctx;
+        this.upper_left_pos = {"x":0, "y":0};
+        this.lowwer_right_pos = {"x":0, "y":0};
+        this.is_search_upper_left = true;
+        this.pixel_ratio_display_over_true_x = 1.0;
+        this.pixel_ratio_display_over_true_y = 1.0;
+        this.is_active = true;
+        this.text = class_info;
+        this.class_id;
+    }
+
+    _onClick(e) {
+        var offsetX = e.offsetX; 
+        var offsetY = e.offsetY; 
+
+        if (this.is_search_upper_left) {
+            this.upper_left_pos["x"] = Math.round(offsetX/this.pixel_ratio_display_over_true_x);
+            this.upper_left_pos["y"] = Math.round(offsetY/this.pixel_ratio_display_over_true_y);
+            this.is_search_upper_left = false;
+        } else {
+            this.lowwer_right_pos["x"] = Math.round(offsetX/this.pixel_ratio_display_over_true_x);
+            this.lowwer_right_pos["y"] = Math.round(offsetY/this.pixel_ratio_display_over_true_y);
+            this.is_search_upper_left = true;
+        }
+    }
+
+    onClick(e){
+        if (this.is_active) {
+            this._onClick(e);
+        }
+    }
+
+    clearCanvas(){
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    }
+
+    _draw(offsetX, offsetY){
+      if (this.is_search_upper_left) {
+        if (this.upper_left_pos["x"] != null && this.upper_left_pos["y"] != null && this.lowwer_right_pos["x"] != null && this.lowwer_right_pos["y"] != null) { 
+          this.ctx.strokeStyle = "orange";
+          this.ctx.strokeRect(
+            Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+            Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
+            Math.round(this.pixel_ratio_display_over_true_x*(this.lowwer_right_pos["x"]-this.upper_left_pos["x"])),
+            Math.round(this.pixel_ratio_display_over_true_y*(this.lowwer_right_pos["y"]-this.upper_left_pos["y"]))
+          );
+          let arr_dict = {x_0:Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+                          y_0:Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
+                          x_1:Math.round(this.pixel_ratio_display_over_true_x*(this.lowwer_right_pos["x"]-this.upper_left_pos["x"])),
+                          y_1:Math.round(this.pixel_ratio_display_over_true_y*(this.lowwer_right_pos["y"]-this.upper_left_pos["y"])),
+                          class_object:this.text,
+                          class_id:this.class_id};
+          arr_coord.push(arr_dict);   
+          this.ctx.font = "30px monospace";
+          this.ctx.fillStyle = "orange";
+          this.ctx.fillText(
+            this.text,
+            Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+            Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"])
+            );
+        }
+      } else {
+        if (offsetX != null && offsetY != null && this.upper_left_pos["x"] != null && this.upper_left_pos["y"] != null) {  
+          this.ctx.strokeStyle = "blue";
+          this.ctx.strokeRect(
+              Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+              Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
+              Math.round(offsetX-this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+              Math.round(offsetY-this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"])
+          );
+          let arr_dict = {x_0:Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+                          y_0:Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
+                          x_1:Math.round(offsetX-this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+                          y_1:Math.round(offsetY-this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
+                          class_object:this.text,
+                          class_id:this.class_id};
+          arr_coord.push(arr_dict);
+          this.ctx.font = "30px monospace";
+          this.ctx.fillStyle = "blue";
+          this.ctx.fillText(
+              this.text,
+              Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
+              Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"])
+          );
+            
+        }      
+      }
+    }
+
+    draw(offsetX, offsetY) {
+      if (this.is_active) {
+        this._draw(offsetX, offsetY)
+      }
+    }
+
+    activate() {
+      this.is_active = true;
+    }
+
+    deactivate() {
+      this.is_active = false;
+    }
+}
+
+var canvas_box = new CanvasVox(canvas, ctx)
+var offsetX; 
+var offsetY; 
+onMove = (e) => {
+    offsetX = e.offsetX; 
+    offsetY = e.offsetY; 
+    canvas_box.clearCanvas();
+    canvas_box.draw(offsetX, offsetY);
+}
+
+canvas.onclick = (e) => {
+    canvas_box.onClick(e);
+    onMove(e);
+}
+canvas.onmousemove = onMove
+
+</script>
+<style type="text/css" media="screen">
+
+
+h2 {
+    font-size: 40px;
+    margin-top: 6px;
+    margin-bottom: 10px;
+}
+
+#Thumb {
+    max-width: 230px;
+    max-height: 130px;
+}
+
+#ProgressContainer {
+    width: 396px;
+    height: 36px;
+    background: #F8F8F8;
+    margin-top: 14px;
+    border: 1px solid #E8E8E8;
+    border-top: 1px solid #D8D8D8;
+
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+#ProgressBar {
+    height: 100%;
+    width: 0%;
+
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    background: #507299;
+}
+
+#UploadBox {
+    font-family: Arial;
+    background: #FFF;
+    padding: 20px;
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    margin-left: -200px;
+    margin-top: -150px;
+    height: auto;
+    width: 400px;
+    border: 1px solid #DFDFDF;
+
+    -webkit-box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
+    -moz-box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
+    box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
+
+    -webkit-border-radius: 11px;
+    -moz-border-radius: 11px;
+    border-radius: 11px;
+}
+
+button.Button {
+    font-size: 18px;
+    color: #ffffff;
+    padding: 8px 30px;
+    background: #507299;
+    -moz-border-radius: 5px;
+    border-radius: 6px;
+    border: none;
+    -moz-box-shadow: 0px 1px 3px rgba(000,000,000,0.5), inset 0px 0px 3px rgba(255,255,255,0.4);
+    margin: 15px auto;
+    display: block;
+    cursor: pointer;
+}
+input {
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+input[type=text] {
+    border: 1px solid #CDCDCD;
+    border-top: 1px solid #676767;
+
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    font-size: 18px;
+    padding: 2px;
+    width: 300px;
+    margin-left: 10px;
+}
+
+div#BlockInfo {
+    position: relative;
+    float: left;
+    margin: auto 5px;
+}
+div#SeeBox {
+    font-family: Roboto, helvetica, arial, sans-serif;
+    display: block;
+    width: 1;
+    float: left;
+}
+span.class_data {
+    margin: 5px auto;
+    position: relative;
+    display: block;
+    font-size: 27px;
+    padding: 0px 5px;
+}
+span.class_data:hover {
+    background: #dadada;
+}
+
+
+</style>
