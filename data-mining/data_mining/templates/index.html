@@ -4,6 +4,7 @@
         <title>загрузчик при помощи javascript/python </title>
 <body style="margin: 0;color: #9d9d9d;background: #fafafa!important;font-family:Arial;">
         <div id="UploadBox">
+            <a href="/admin">админ. панель</a>
             <h2>Загрузчик</h2>
             <span id='UploadArea'>
                 <label for="FileBox">Выберите файл: </label><input type="file" id="FileBox" onchange="load_image_profile(this)"><br>
@@ -31,18 +32,18 @@ var UploadButton = document.getElementById('UploadButton');
 var canvas = document.getElementById('example');
 var ctx = canvas.getContext('2d');
 var class_info;
-var arr_coord = [];
 var SelectedFile;
 var dataURL_main;
 // загрузка изображения в canvas
 function load_image_profile(self) {
-    
     var reader = new FileReader();
     reader.onload = function(event){
         var img = new Image();
         img.onload = function(){
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas_box.canvas.width = img.width;
+            canvas_box.canvas.height = img.height;
+            canvas_box.upper_left_pos = {"x":0, "y":0};
+            canvas_box.lowwer_right_pos = {"x":0, "y":0};
             dataURL_main = reader.result;
 <!--            ctx.drawImage(img, 0, 0);-->
         }
@@ -50,6 +51,7 @@ function load_image_profile(self) {
         img.src = event.target.result;
         SelectedFile = self.files[0].name;
         console.log("....", SelectedFile);
+        canvas_box.clearCanvas();
         if (document.body.offsetHeight > document.body.offsetWidth) {
             img.style.maxHeight = document.body.offsetHeight;
             img.style.maxWidth = document.body.offsetWidth;
@@ -58,7 +60,7 @@ function load_image_profile(self) {
             img.style.maxHeight = document.body.offsetHeight;
             img.style.maxWidth = document.body.offsetWidth;
         }
-<!--        document.getElementById('UploadBox').style.display = "none"-->
+        document.getElementById('UploadBox').style.display = "none"
         document.getElementById('SeeBox').style.display = "block";
         document.getElementById('BlockInfo').style.display = "block";
         
@@ -76,6 +78,14 @@ function start_main() {
         var message_data = JSON.parse(event.data);
         if (message_data["status"]=="mainpost") {
             console.log("WS from server")
+            canvas_box.arr_coord = []; 
+            canvas_box.clearCanvas();
+            canvas_box.upper_left_pos = {"x":0, "y":0};
+            canvas_box.lowwer_right_pos = {"x":0, "y":0};
+            canvas_box.canvas.width = 0;
+            canvas_box.canvas.height = 0;
+            document.getElementById('UploadBox').style.display = "block"
+            document.getElementById('BlockInfo').style.display = "none";
         }
     };
     ws_main.onclose = function(e){
@@ -97,7 +107,6 @@ function start_main() {
 start_main()
 
 send_server = (e) => {
-    console.log(".....", e);
     if (ws_main.readyState != WebSocket.OPEN) {
         return false;
     }  
@@ -106,30 +115,32 @@ send_server = (e) => {
                   text: "",
                   name_image: SelectedFile,
                   image: dataURL_main,
-                  arr_coord: arr_coord,
+                  arr_coord: canvas_box.arr_coord,
                   os_info: window.navigator.userAgent,
                   event: "mainpost",
     };
-        
+    console.log(".....", event);    
     let data = JSON.stringify(event); 
     ws_main.send(data);   
-    arr_coord.length=0; 
 }
 
 UploadButton.onclick = send_server
 
 // выбор класса 
 function pickClass(self) {
-    console.log(self.innerText);
-<!--    self.style.-->
     canvas_box.class_id = self.getAttribute('atr-id');
     canvas_box.text = self.innerText;
+    canvas_box.arr_dict.class_object = self.innerText;
+    canvas_box.arr_dict.class_id = self.getAttribute('atr-id');
     canvas_box.clearCanvas();
     canvas_box.draw(offsetX, offsetY);
+    console.log(self.innerText, canvas_box.arr_coord);
 }
 
 
 // выделяющая рамка https://9to5tutorial.com/javascript-creating-and-drawing-bounding-boxes-in-canvas
+
+
 class CanvasVox {
     constructor(canvas, ctx) {
         this.canvas = canvas;
@@ -142,20 +153,32 @@ class CanvasVox {
         this.is_active = true;
         this.text = class_info;
         this.class_id;
+        this.arr_dict;
+        this.arr_coord = [];
+        console.log("!--------->", this.arr_coord);
     }
 
     _onClick(e) {
         var offsetX = e.offsetX; 
         var offsetY = e.offsetY; 
-
         if (this.is_search_upper_left) {
             this.upper_left_pos["x"] = Math.round(offsetX/this.pixel_ratio_display_over_true_x);
             this.upper_left_pos["y"] = Math.round(offsetY/this.pixel_ratio_display_over_true_y);
+            this.arr_dict = {}
+            this.arr_dict["x_0"] = Math.round(offsetX/this.pixel_ratio_display_over_true_x);
+            this.arr_dict["y_0"] = Math.round(offsetY/this.pixel_ratio_display_over_true_y);
+            this.arr_dict["class_object"] = this.text;
+            this.arr_dict["class_id"] = this.class_id;
             this.is_search_upper_left = false;
         } else {
             this.lowwer_right_pos["x"] = Math.round(offsetX/this.pixel_ratio_display_over_true_x);
             this.lowwer_right_pos["y"] = Math.round(offsetY/this.pixel_ratio_display_over_true_y);
+            this.arr_dict["x_1"] = Math.round(offsetX/this.pixel_ratio_display_over_true_x),
+            this.arr_dict["y_1"] = Math.round(offsetY/this.pixel_ratio_display_over_true_y),
+            this.arr_dict["class_object"] = this.text;
+            this.arr_dict["class_id"] = this.class_id;
             this.is_search_upper_left = true;
+            this.arr_coord.push(this.arr_dict);
         }
     }
 
@@ -179,13 +202,6 @@ class CanvasVox {
             Math.round(this.pixel_ratio_display_over_true_x*(this.lowwer_right_pos["x"]-this.upper_left_pos["x"])),
             Math.round(this.pixel_ratio_display_over_true_y*(this.lowwer_right_pos["y"]-this.upper_left_pos["y"]))
           );
-          let arr_dict = {x_0:Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
-                          y_0:Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
-                          x_1:Math.round(this.pixel_ratio_display_over_true_x*(this.lowwer_right_pos["x"]-this.upper_left_pos["x"])),
-                          y_1:Math.round(this.pixel_ratio_display_over_true_y*(this.lowwer_right_pos["y"]-this.upper_left_pos["y"])),
-                          class_object:this.text,
-                          class_id:this.class_id};
-          arr_coord.push(arr_dict);   
           this.ctx.font = "30px monospace";
           this.ctx.fillStyle = "orange";
           this.ctx.fillText(
@@ -203,13 +219,6 @@ class CanvasVox {
               Math.round(offsetX-this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
               Math.round(offsetY-this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"])
           );
-          let arr_dict = {x_0:Math.round(this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
-                          y_0:Math.round(this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
-                          x_1:Math.round(offsetX-this.pixel_ratio_display_over_true_x*this.upper_left_pos["x"]),
-                          y_1:Math.round(offsetY-this.pixel_ratio_display_over_true_y*this.upper_left_pos["y"]),
-                          class_object:this.text,
-                          class_id:this.class_id};
-          arr_coord.push(arr_dict);
           this.ctx.font = "30px monospace";
           this.ctx.fillStyle = "blue";
           this.ctx.fillText(
@@ -296,19 +305,14 @@ h2 {
     font-family: Arial;
     background: #FFF;
     padding: 20px;
-    position: absolute;
-    top: 20%;
-    left: 50%;
-    margin-left: -200px;
-    margin-top: -150px;
+    position: relative;
+    margin: 0 auto;
     height: auto;
     width: 400px;
     border: 1px solid #DFDFDF;
-
     -webkit-box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
     -moz-box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
     box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
-
     -webkit-border-radius: 11px;
     -moz-border-radius: 11px;
     border-radius: 11px;
@@ -366,6 +370,13 @@ span.class_data {
 span.class_data:hover {
     background: #dadada;
 }
-
+#UploadBox a {
+    font-size: 20px;
+    background: #9d9d9d;
+    color: white;
+    padding: 4px;
+    border-radius: 6px;
+    text-decoration: none !important;
+}
 
 </style>

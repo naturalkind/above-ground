@@ -66,7 +66,8 @@ class MainHandler(AsyncJsonWebsocketConsumer):
                 post.user_post = self.scope['user']
                 post_async = sync_to_async(post.save)
                 await post_async()                
-#                    _data = {"type": "mainpost"}
+                _data = {"type": "mainpost",
+                         "status" : "mainpost"}
 #    #                _data={
 #    #                        "type": "wallpost",
 #    #                        "comment_text": response["comment_text"],
@@ -78,14 +79,13 @@ class MainHandler(AsyncJsonWebsocketConsumer):
 #    #                        "post_id": response["post_id"],
 #    #                        "user_id": str(self.sender_id),
 #    #                        "timecomment":now,
-#    #                        "status" : "send_comment"
+#    #                        
 #    #                    }
-#                    await self.channel_layer.group_send(self.room_group_name, _data)
+                await self.channel_layer.group_send(self.room_group_name, _data)
                       
 
     async def mainpost(self, res):
         """ Receive message from room group """
-        # Send message to WebSocket
-        print ("WALLPOST", res)
+        print ("MAINPOST", res)
         await self.send(text_data=json.dumps(res))
 
