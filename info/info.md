@@ -10,9 +10,9 @@
 * https://unrealcpp.com/actor-line-trace/
 * https://forums.unrealengine.com/t/creating-splines-from-navigation-paths/135754
 * https://snorristurluson.github.io/VisualizingPaths/   
-* https://www.youtube.com/watch?v=IIhAOmJ5bAo
+* https://www.youtube.com/watch?v=IIhAOmJ5bAo - на русском!!!   
 * https://www.youtube.com/watch?v=oYmfq1GJaMQ
-* https://www.youtube.com/watch?v=eKIiWa19EMI
+* https://www.youtube.com/watch?v=eKIiWa19EMI - mesh создавать сплайном
 * https://www.youtube.com/watch?v=kJyWSzfwEk8
 * https://www.youtube.com/watch?v=udpvHos49Y4 - unreal 3.5
 * https://forums.unrealengine.com/t/trouble-implementing-splinemeshcomponents/105434
@@ -20,14 +20,44 @@
 * https://forums.unrealengine.com/t/whats-the-correct-way-to-add-spline-mesh-in-c/641213
 * https://forums.unrealengine.com/t/draw-predicted-movement-path-and-any-spline-trajectory/135518
 * https://russianblogs.com/article/41823512854/
+* https://www.orfeasel.com/creating-flight-paths-using-splines/   
+* https://github.com/orfeasel/UE4-Cpp-Tutorials/tree/master/FlightPathSystem   
+* https://switchbackstudio.org/2022/02/07/tutorial-how-to-access-landscape-splines-in-unreal-for-pathing/
+* https://github.com/Louis1351/Spline-Objects-Tool-UE4
+* https://www.youtube.com/watch?v=iGygYpXY75w - создание лифта
 
 ##### Log в консоль
 * https://www.chrismccole.com/blog/logging-in-ue4-cpp
 * https://unrealcommunity.wiki/logging-lgpidy6i#logging-using-ue_log
 #####
+* https://forums.unrealengine.com/t/how-to-send-an-input-key-event-from-code/286270/2 - имитация действия пользователя
+* https://dzen.ru/a/YrwCqm8uRhkQ3Nro - настройка клавиш
 * https://www.vikram.codes/blog/ai/01-basic-navigation   
-* https://gist.github.com/derofim/fa21005b04b01836cd92ec227d3fff57
+* https://gist.github.com/derofim/fa21005b04b01836cd92ec227d3fff57 - структурированная информация
+* https://stackoverflow.com/questions/60021804/unreal-engine-4-different-ways-to-instantiate-the-object
+* https://www.reddit.com/r/unrealengine/comments/9mws8q/how_can_i_get_a_reference_in_a_c_level_file_to_an/ - пулучить все Actor на уровне
+* https://www.youtube.com/watch?v=7yP5C_LOYcU - ActorSpawn
+* https://dev.epicgames.com/community/snippets/bRM/spawning-actors-from-c-with-reflection-support - ActorSpawn
+* https://www.youtube.com/watch?v=kzq2G0aMFG4 - загрузка в стоковое место
+* https://www.youtube.com/watch?v=y9hr10g6PUI - добавление компонентов в класс C++ в UE
+* https://mikelis.net/designing-blueprint-function-nodes-in-c/ - C++ / blueprint
+* https://www.youtube.com/watch?v=kzq2G0aMFG4 - добавление уровня
+* https://forums.unrealengine.com/t/creating-drag-and-drop-ui-using-c/269049 - перетаскивание drag&drop
+* https://www.ultraengine.com/community/blogs/entry/2557-how-to-attach-c-actors-in-leadwerks-4/ - ВАЖНО!!!
+* https://1danielcoelho.github.io/unreal-engine-basics-base-classes/ - ВАЖНО!!!
+* https://nerivec.github.io/old-ue4-wiki/pages/procedural-mesh-component-in-cgetting-started.html
+* https://docs.unrealengine.com/4.26/en-US/ProgrammingAndScripting/ProgrammingWithCPP/UnrealArchitecture/Actors/ActorLifecycle/ - жизнь Актера
+* https://www.freecodecamp.org/news/real-time-dynamic-cover-system-in-unreal-engine-4-eddb554eaefb/
+* https://nerivec.github.io/old-ue4-wiki/pages/procedural-mesh-component-in-cgetting-started.html
 
+##### Получение/сохранение изображения с камеры
+* https://forums.unrealengine.com/t/select-camera-render-get-image/78200/3 - захват изображения
+* https://forums.unrealengine.com/t/save-render-target-to-file/480642
+* https://stackoverflow.com/questions/43218678/unreal-engine-accessing-saving-in-game-images-to-disk-without-blocking-game-thr
+* https://github.com/TimmHess/UnrealImageCapture - рабочее решение
+
+##### Потоки 
+* https://programmerall.com/article/83642333629/   
 
 #### Уроки Blender   
 https://www.youtube.com/watch?v=g7XKX3bm5ak&t=396s   

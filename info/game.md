@@ -23,6 +23,11 @@ Engine/Binaries/ThirdParty/Mono/Linux/bin/mono  Engine/Binaries/DotNET/UnrealBui
 ```
 UnrealEngine-4.27.0-release/Engine/Binaries/Linux/UE4Editor
 ```
+Отображение сплайна в игре
+```
+showflag.splines 1
+```
+
 
 1. в blender импортировал .dae   
 2. уменьшил полигоны в полученом, для лучшей работы   
