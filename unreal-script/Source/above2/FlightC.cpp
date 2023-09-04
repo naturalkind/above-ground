@@ -3,7 +3,10 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "CaptureManager.h"
 //#include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 
 #include "Logging/LogMacros.h"
@@ -47,8 +50,6 @@ AFlightC::AFlightC()
 //    // Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 //    // are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 
-
-
     FlightBoxCollider = CreateDefaultSubobject<UBoxComponent>(FName("FlightBoxCollider"));
 
     FlightBoxCollider->SetBoxExtent(FVector(150.f));
@@ -57,12 +58,23 @@ AFlightC::AFlightC()
 
 }
 
+
 // Called when the game starts or when spawned
 void AFlightC::BeginPlay()
 {
     Super::BeginPlay();
     //Register a function that gets called when the box overlaps with a component
     FlightBoxCollider->OnComponentBeginOverlap.AddDynamic(this, &AFlightC::OnFlightBoxColliderOverlap);
+
+    // work https://code911.top/howto/unreal-how-to-delete-link-code-example
+    AActor* FoundActor = UGameplayStatics::GetActorOfClass(GetWorld(), ACaptureManager::StaticClass());
+    CaptureActor = Cast<ACaptureManager>(FoundActor);
+    //    if (CaptureActor->IsA<ACaptureManager>())
+    if (CaptureActor)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CaptureActor....>>> %s"), *CaptureActor->GetFName().ToString());
+    }
+
 }
 
 // Called every frame
@@ -109,9 +121,12 @@ void AFlightC::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AFlightC::TickTimeline(float Value)
 {
-    UE_LOG(LogTemp, Warning, TEXT("TickTimeline..............")); //Display
-    float SplineLength = ActiveSplineComponent->GetSplineLength();
 
+    float SplineLength = ActiveSplineComponent->GetSplineLength();
+//    float SplineLength = this->ActiveSplineComponent->GetSplineLength();
+
+//    UE_LOG(LogTemp, Warning, TEXT("APlayerCameraManage-------->%f"), SplineLength);
+//    UE_LOG(LogTemp, Warning, TEXT("TickTimeline..............")); //Display
     //Get the new location based on the provided values from the timeline.
     //The reason we're multiplying Value with SplineLength is because all our designed curves in the UE4 editor have a time range of 0 - X.
     //Where X is the total flight time
@@ -125,7 +140,38 @@ void AFlightC::TickTimeline(float Value)
     NewRotation.Pitch = 0;
 
     SetActorRotation(NewRotation);
+
+    CaptureActor->TestFunc(NewLocation);
+
+//    this->GetOwner()->SetActorLocation(NewLocation);
+//    CaptureActor->GetOwner()->SetActorLocation(NewLocation);
+//    CaptureActor->GetOwner()->SetActorLocation(NewLocation);
+    //GameManager->CaptureNonBlocking();
+
 }
+
+FVector GetSplinePointLocationInConstructionScript(USplineComponent* SplineComponent, int32 PointIndex)
+{
+// Check if the SplineComponent is valid
+if (!SplineComponent)
+{
+    UE_LOG(LogTemp, Error, TEXT("Invalid SplineComponent"));
+    return FVector::ZeroVector;
+}
+
+// Check if the PointIndex is valid
+if (PointIndex < 0 || PointIndex >= SplineComponent->GetNumberOfSplinePoints())
+{
+    UE_LOG(LogTemp, Error, TEXT("Invalid PointIndex"));
+    return FVector::ZeroVector;
+}
+
+// Get the location of the spline point
+FVector SplinePointLocation = SplineComponent->GetLocationAtSplinePoint(PointIndex, ESplineCoordinateSpace::World);
+
+return SplinePointLocation;
+}
+
 
 void AFlightC::OnFlightBoxColliderOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -140,6 +186,20 @@ void AFlightC::OnFlightBoxColliderOverlap(UPrimitiveComponent* OverlappedCompone
 void AFlightC::NextFlightPathSelected()
 {
     GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, TEXT("KLICK BUTTON"));
+
+
+//    // get actor in scene by class
+    AActor* FoundActor = UGameplayStatics::GetActorOfClass(GetWorld(), AFlightStopActor::StaticClass());
+    AFlightStopActor* GameManager = Cast<AFlightStopActor>(FoundActor);
+
+//    const int32 NumPointSpline = GameManager->GetNextFlightSplineComp()->GetNumberOfSplinePoints();
+//    // location first point in spline
+//    FVector SplinePointLocation = GameManager->GetNextFlightSplineComp()->GetLocationAtSplinePoint(0, ESplineCoordinateSpace::World);
+//    UE_LOG(LogTemp, Warning, TEXT("NextFlightPathSelected-------->%s"), *SplinePointLocation.ToString());
+
+    ActiveFlightStopActor = Cast<AFlightStopActor>(GameManager);
+
+
     if (ActiveFlightStopActor)
     {
         //Get the next flight path's spline component and update the flight timeline with the corresponding curve

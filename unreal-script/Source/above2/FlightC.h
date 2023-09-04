@@ -7,6 +7,7 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
 #include "FlightStopActor.h"
+#include "CaptureManager.h"
 #include "FlightC.generated.h"
 
 UCLASS(config=Game)
@@ -38,6 +39,16 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
     float BaseLookUpRate;
 
+    // ????????????????
+
+    UPROPERTY(EditAnywhere)
+    class ACaptureManager* CaptureActor;  //Create a pointer to your another class
+//    class AActor* CaptureActor;
+
+//    UPROPERTY(EditAnywhere)
+//    class USceneCaptureComponent2D* CaptureActor;
+//    class ASceneCapture2D* CaptureActor;
+    // ????????????????
 
     /** The active spline component, meaning the flight path that the character is currently following */
     USplineComponent* ActiveSplineComponent;
@@ -56,6 +67,7 @@ public:
 
     UFUNCTION()
     void ResetActiveFlightStopActor();
+
 
 protected:
 	// Called when the game starts or when spawned

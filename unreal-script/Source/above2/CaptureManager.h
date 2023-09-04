@@ -11,8 +11,6 @@ class UMaterial;
 #include "CaptureManager.generated.h"
 
 
-
-
 USTRUCT()
 struct FRenderRequestStruct{
     GENERATED_BODY()
@@ -112,6 +110,10 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "ImageCapture")
     void CaptureFloatNonBlocking();
+public:
+    UFUNCTION()
+    void TestFunc(FVector NewLocation); //FVector NewLocation
+
 };
 
 

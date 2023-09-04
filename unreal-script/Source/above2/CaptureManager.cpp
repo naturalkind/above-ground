@@ -22,6 +22,7 @@
 #include "ImageUtils.h"
 
 #include "Modules/ModuleManager.h"
+#include "FlightC.h"
 
 #include "Misc/FileHelper.h"
 
@@ -41,6 +42,7 @@ void ACaptureManager::BeginPlay()
     if(CaptureComponent){ // nullptr check
         SetupCaptureComponent();
 //        CaptureNonBlocking();
+        UE_LOG(LogTemp, Warning, TEXT("CaptureComponent.... %s"), *CaptureComponent->GetFName().ToString());
     } else{
         UE_LOG(LogTemp, Error, TEXT("No CaptureComponent set!"));
     }
@@ -51,7 +53,10 @@ void ACaptureManager::BeginPlay()
 void ACaptureManager::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-    CaptureNonBlocking();
+
+//    UE_LOG(LogTemp, Warning, TEXT("ACaptureManager's Name is %s"), *this->GetFName().ToString());
+    // Work!!!!!
+//     CaptureNonBlocking();
     if(UseFloat){
         // READ FLOAT IMAGE
         if(!RenderFloatRequestQueue.IsEmpty()){
@@ -175,6 +180,11 @@ void ACaptureManager::SetupCaptureComponent(){
         UE_LOG(LogTemp, Log, TEXT("No PostProcessMaterial is assigend"));
     }
     UE_LOG(LogTemp, Warning, TEXT("Initialized RenderTarget!"));
+
+
+    FVector startPos = FVector(0.0f,0.0f,20.0f);
+    CaptureComponent->SetActorLocation(startPos);
+    UE_LOG(LogTemp, Error, TEXT("COORD ------>%s"), *CaptureComponent->GetActorLocation().ToString());
 }
 
 void ACaptureManager::CaptureNonBlocking(){
@@ -312,7 +322,17 @@ void ACaptureManager::RunAsyncImageSaveTask(TArray64<uint8> Image, FString Image
     (new FAutoDeleteAsyncTask<AsyncSaveImageToDiskTask>(Image, ImageName))->StartBackgroundTask();
 }
 
+void ACaptureManager::TestFunc(FVector NewLocation){
+    UE_LOG(LogTemp, Warning, TEXT("Test Func %s"), *NewLocation.ToString());
+    UE_LOG(LogTemp, Warning, TEXT("ACaptureManager's Name is %s"), *this->GetFName().ToString());
+    UE_LOG(LogTemp, Warning, TEXT("Test Func2 %s"), *this->CaptureComponent->GetActorLocation().ToString());
 
+    CaptureComponent->SetActorLocation(NewLocation);
+//    this->SetActorLocation(NewLocation);
+//    SetActorRelativeLocation(NewLocation);
+    CaptureNonBlocking();
+
+}
 
 /*
 *******************************************************************

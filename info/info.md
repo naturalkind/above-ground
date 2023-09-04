@@ -25,6 +25,7 @@
 * https://switchbackstudio.org/2022/02/07/tutorial-how-to-access-landscape-splines-in-unreal-for-pathing/
 * https://github.com/Louis1351/Spline-Objects-Tool-UE4
 * https://www.youtube.com/watch?v=iGygYpXY75w - создание лифта
+* https://forums.unrealengine.com/t/c-video-tutorial-roller-coasters-path-following-rail-shooters/50241 - движение шарика по траектории
 
 ##### Log в консоль
 * https://www.chrismccole.com/blog/logging-in-ue4-cpp
@@ -49,12 +50,17 @@
 * https://docs.unrealengine.com/4.26/en-US/ProgrammingAndScripting/ProgrammingWithCPP/UnrealArchitecture/Actors/ActorLifecycle/ - жизнь Актера
 * https://www.freecodecamp.org/news/real-time-dynamic-cover-system-in-unreal-engine-4-eddb554eaefb/
 * https://nerivec.github.io/old-ue4-wiki/pages/procedural-mesh-component-in-cgetting-started.html
+* https://forums.unrealengine.com/t/player-start-bad-size-icon/16152/3 - ошибка!!!
+* http://jollymonsterstudio.com/2020/05/13/unreal-engine-c-fundamentals-using-spline-components/
+* https://www.froyok.fr/blog/2019-03-creating-seamless-portals-in-unreal-engine-4/
 
 ##### Получение/сохранение изображения с камеры
 * https://forums.unrealengine.com/t/select-camera-render-get-image/78200/3 - захват изображения
 * https://forums.unrealengine.com/t/save-render-target-to-file/480642
 * https://stackoverflow.com/questions/43218678/unreal-engine-accessing-saving-in-game-images-to-disk-without-blocking-game-thr
 * https://github.com/TimmHess/UnrealImageCapture - рабочее решение
+* https://github.com/zipzit/UnrealCustomScreenCapture
+* https://github.com/finger563/unreal-camera-capture - UE5!!!
 
 ##### Потоки 
 * https://programmerall.com/article/83642333629/   
