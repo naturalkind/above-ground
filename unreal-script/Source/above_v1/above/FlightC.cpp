@@ -75,6 +75,11 @@ void AFlightC::BeginPlay()
     if (CaptureActor)
     {
         UE_LOG(LogTemp, Warning, TEXT("CaptureActor....>>> %s"), *CaptureActor->GetFName().ToString());
+        
+        UseIndicator = false;
+        NextFlightPathSelected();
+        GetAllSplinePointCoord();
+        
     }
 
 }
@@ -132,6 +137,26 @@ float AFlightC::GetDistanceAlongSplineAtWorldLocation(const USplineComponent* In
     return A + ((B - A) * (InputKeyFloat - InputKey));
 }
 
+void AFlightC::GetAllSplinePointCoord()
+{
+    if (ActiveSplineComponent->GetNumberOfSplinePoints() < 2)
+        return;
+    int splen = static_cast<int32>(ActiveSplineComponent->GetSplineLength());
+    for (int32 i = 0 ; i < splen-1; i+=1)
+//    for (float i = 0 ; i < ActiveSplineComponent->GetSplineLength(); i+=.1)
+    {
+        FVector LocPointSpline = ActiveSplineComponent->GetWorldLocationAtDistanceAlongSpline(i);
+        TStr += FString::Printf(TEXT("%s\n"), *LocPointSpline.ToString());
+        UE_LOG(LogTemp, Warning, TEXT("__________________>%s"), *LocPointSpline.ToString());
+    }
+
+    FString SaveDirectory = FString("/media/sadko/unrealdir/above/Saved");
+    FString FileName = FString("test.txt");
+    FString AbsoluteFilePath = SaveDirectory + "/" + FileName;
+    FFileHelper::SaveStringToFile(TStr, *AbsoluteFilePath);
+    TStr = "";
+
+}
 
 void AFlightC::TickTimeline(float Value)
 {
@@ -154,11 +179,7 @@ void AFlightC::TickTimeline(float Value)
     NewRotation.Pitch = 0;
 
     SetActorRotation(NewRotation);
-
-    CaptureActor->TestFunc(NewLocation);
-
-    UE_LOG(LogTemp, Warning, TEXT("POSITION IN WORLD-------->%s"), *NewLocation.ToString());
-
+    CaptureActor->TestFunc(NewLocation, isFinishedSaveData);
     TStr += FString::Printf(TEXT("%s\n"), *NewLocation.ToString());
 
 
@@ -167,10 +188,9 @@ void AFlightC::TickTimeline(float Value)
 //    CaptureActor->GetOwner()->SetActorLocation(NewLocation);
 
     //GameManager->CaptureNonBlocking();
+    UE_LOG(LogTemp, Warning, TEXT("New coord location -------->%s"), *TStr);
 
-    
     float endT = this->GetDistanceAlongSplineAtWorldLocation(ActiveSplineComponent, NewLocation);
-    UE_LOG(LogTemp, Warning, TEXT("POSITION IN WORLD-------->%s"), *NewLocation.ToString());
     if (SplineLength==endT) {
         if (isFinishedSaveData) {
             // Save file
@@ -192,7 +212,7 @@ void AFlightC::TickTimeline(float Value)
             }
         }
     }
-    
+
 }
 
 
@@ -220,12 +240,12 @@ return SplinePointLocation;
 
 void AFlightC::OnFlightBoxColliderOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    UE_LOG(LogTemp, Warning, TEXT("START 1")); //Display
     if (OtherActor->IsA<AFlightStopActor>())
     {
-        UE_LOG(LogTemp, Warning, TEXT("START 2")); //Display
+        UE_LOG(LogTemp, Warning, TEXT("...OnFlightBoxColliderOverlap"));
         //Store a reference of the nearby flight stop actor
         ActiveFlightStopActor = Cast<AFlightStopActor>(OtherActor);
+        UseIndicator = true;
     }
 }
 void AFlightC::NextFlightPathSelected()
@@ -249,7 +269,9 @@ void AFlightC::NextFlightPathSelected()
     {
         //Get the next flight path's spline component and update the flight timeline with the corresponding curve
         ActiveSplineComponent = ActiveFlightStopActor->GetNextFlightSplineComp();
-        UpdateFlightTimeline(ActiveFlightStopActor->GetNextFlightCurve());
+        if (UseIndicator){
+            UpdateFlightTimeline(ActiveFlightStopActor->GetNextFlightCurve());
+        }
     }
 }
 
@@ -281,7 +303,7 @@ void AFlightC::UpdateFlightTimeline(UCurveFloat* CurveFloatToBind)
 
 void AFlightC::ResetActiveFlightStopActor()
 {
-    UE_LOG(LogTemp, Warning, TEXT("...ResetActiveFlightStopActoru")); //Display
+    UE_LOG(LogTemp, Warning, TEXT("...ResetActiveFlightStopActor")); //Display
     ActiveFlightStopActor = nullptr;
 }
 

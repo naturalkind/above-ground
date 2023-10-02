@@ -113,5 +113,7 @@ public:
     // save coord data
     FString TStr;
     bool isFinishedSaveData = true;
+    bool UseIndicator;
     float GetDistanceAlongSplineAtWorldLocation(const USplineComponent* InSpline, const FVector InWorldLocation);
+    void GetAllSplinePointCoord();
 };

@@ -112,7 +112,7 @@ public:
     void CaptureFloatNonBlocking();
 public:
     UFUNCTION()
-    void TestFunc(FVector NewLocation); //FVector NewLocation
+    void TestFunc(FVector NewLocation, bool isFinishedSaveData); //FVector NewLocation
 
 };
 

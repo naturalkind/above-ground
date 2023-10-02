@@ -320,15 +320,18 @@ void ACaptureManager::RunAsyncImageSaveTask(TArray64<uint8> Image, FString Image
     (new FAutoDeleteAsyncTask<AsyncSaveImageToDiskTask>(Image, ImageName))->StartBackgroundTask();
 }
 
-void ACaptureManager::TestFunc(FVector NewLocation){
-    UE_LOG(LogTemp, Warning, TEXT("Test Func %s"), *NewLocation.ToString());
-    UE_LOG(LogTemp, Warning, TEXT("ACaptureManager's Name is %s"), *this->GetFName().ToString());
-    UE_LOG(LogTemp, Warning, TEXT("Test Func2 %s"), *this->CaptureComponent->GetActorLocation().ToString());
+void ACaptureManager::TestFunc(FVector NewLocation, bool isFinishedSaveData){
+//    UE_LOG(LogTemp, Warning, TEXT("Test Func %s"), *NewLocation.ToString());
+//    UE_LOG(LogTemp, Warning, TEXT("ACaptureManager's Name is %s"), *this->GetFName().ToString());
+//    UE_LOG(LogTemp, Warning, TEXT("Test Func2 %s"), *this->CaptureComponent->GetActorLocation().ToString());
 
     CaptureComponent->SetActorLocation(NewLocation);
 //    this->SetActorLocation(NewLocation);
 //    SetActorRelativeLocation(NewLocation);
-    CaptureNonBlocking();
+    if (isFinishedSaveData) {
+        CaptureNonBlocking();
+    }
+
 
 }
 
