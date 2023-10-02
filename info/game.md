@@ -5,10 +5,11 @@
 4. выбор высоты
 
 #### шпаргалка
-https://epicgames.github.io/BlenderTools/send2ue/introduction/quickstart.html - проверить !!!   
-https://dtf.ru/gamedev/1044579-besplatnyy-level-dizayn-ili-kak-stroit-landshaft-v-realnom-vremeni-na-ue4 - проверить !!!   
-https://github.com/samorr/Computer-Vision-and-Photogrammetry   
-https://blender.stackexchange.com/questions/271985/how-to-bake-texture-to-vertex-colors   
+* https://epicgames.github.io/BlenderTools/send2ue/introduction/quickstart.html - проверить !!!   
+* https://dtf.ru/gamedev/1044579-besplatnyy-level-dizayn-ili-kak-stroit-landshaft-v-realnom-vremeni-na-ue4 - проверить !!!   
+* https://github.com/samorr/Computer-Vision-and-Photogrammetry   
+* https://blender.stackexchange.com/questions/271985/how-to-bake-texture-to-vertex-colors   
+* https://forums.unrealengine.com/t/how-do-you-compile-c-changes-in-a-plugin-solved-sort-of/366097/5 - перекомпелировать модуль airsim   
 
 
 ## Мой путь

@@ -30,6 +30,14 @@
 ##### Log в консоль
 * https://www.chrismccole.com/blog/logging-in-ue4-cpp
 * https://unrealcommunity.wiki/logging-lgpidy6i#logging-using-ue_log
+
+##### Временная шкала и кривая
+* https://forums.unrealengine.com/t/c-dynamic-curves/141555
+* https://forums.unrealengine.com/t/creating-and-using-ucurvefloat-in-unreal-engine-in-c-for-ftimeline/592214
+* https://nerivec.github.io/old-ue4-wiki/pages/timeline-in-c.html
+* https://forums.unrealengine.com/t/how-do-i-create-an-ucurvefloat/285521
+* https://nerivec.github.io/old-ue4-wiki/pages/curves-create-custom-cubic-curves-in-editor-for-use-in-code.html
+
 #####
 * https://forums.unrealengine.com/t/how-to-send-an-input-key-event-from-code/286270/2 - имитация действия пользователя
 * https://dzen.ru/a/YrwCqm8uRhkQ3Nro - настройка клавиш
@@ -53,6 +61,8 @@
 * https://forums.unrealengine.com/t/player-start-bad-size-icon/16152/3 - ошибка!!!
 * http://jollymonsterstudio.com/2020/05/13/unreal-engine-c-fundamentals-using-spline-components/
 * https://www.froyok.fr/blog/2019-03-creating-seamless-portals-in-unreal-engine-4/
+* https://www.orfeasel.com/consuming-timelines-using-c/
+* https://www.vitorcantao.com/post/climbing-system/ - паркур
 
 ##### Получение/сохранение изображения с камеры
 * https://forums.unrealengine.com/t/select-camera-render-get-image/78200/3 - захват изображения
@@ -91,13 +101,13 @@ https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отобр�
 * https://github.com/williamhyin/SFND_2D_Feature_Tracking
 * https://habr.com/ru/companies/innopolis/articles/653929/
 
-#### спрямление длина кривой
+#### Спрямление длина кривой
 * https://stackoverflow.com/questions/5228383/how-do-i-find-the-distance-between-two-points
 * https://stackoverflow.com/questions/31543775/how-to-perform-cubic-spline-interpolation-in-python
 * https://stackoverflow.com/questions/41175004/python-finding-a-curve-length
 * https://russianblogs.com/article/3131128474/
 
-#### поворот на угл в tkinter, numpy
+#### Поворот на угл в tkinter, numpy
 * https://qna.habr.com/q/945435
 * https://stackoverflow.com/questions/23463070/rotate-a-square-by-an-angle-in-degree
 * https://stackoverflow.com/questions/20840692/rotation-of-a-2d-array-over-an-angle-using-rotation-matrix
@@ -113,32 +123,32 @@ https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отобр�
 * https://stackoverflow.com/questions/10969170/rotation-angle-of-the-perspective-matrix
 * https://stackoverflow.com/questions/58538984/how-to-get-the-rotation-angle-from-findhomography
 
-#### tkinter рисование с зажатой кнопкой
+#### Tkinter рисование с зажатой кнопкой
 * https://stackoverflow.com/questions/34522095/gui-button-hold-down-tkinter
 * http://pythonicway.com/python-examples/python-gui-examples/28-python-paint
 * https://stackoverflow.com/questions/15736530/python-tkinter-rotate-image-animation
 
-#### получить координаты камеры
+#### Получить координаты камеры
 * https://stackoverflow.com/questions/14444433/calculate-camera-world-position-with-opencv-python
 * https://www.fdxlabs.com/calculate-x-y-z-real-world-coordinates-from-a-single-camera-using-opencv/
 * https://stackoverflow.com/questions/8927771/computing-camera-pose-with-homography-matrix-based-on-4-coplanar-points/10781165#10781165
 * https://stackru.com/questions/10402785/vyichislenie-pozyi-kameryi-s-matritsej-gomografii-na-osnove-4-koplanarnyih-tochek
 * https://pythonpath.wordpress.com/import-cv2/
 
-#### оптический поток
+#### Оптический поток
 * https://mpolinowski.github.io/docs/IoT-and-Machine-Learning/ML/2021-12-10--opencv-optical-flow-tracking/2021-12-10/
 * https://github.com/philferriere/tfoptflow
 
-#### спектральная кластеризацияhttps://github.com/mikeroyal/Unreal-Engine-Guide
+#### Спектральная кластеризацияhttps://github.com/mikeroyal/Unreal-Engine-Guide
 * https://calvinfeng.gitbook.io/machine-learning-notebook/unsupervised-learning/clustering/spectral_clustering
 
-#### стабилизация изображения
+#### Стабилизация изображения
 * https://datahacker.rs/006-advanced-computer-vision-video-stabilization/
 
-#### соединять пазлы 
+#### Соединять пазлы 
 * https://deepai.org/publication/jigsawgan-self-supervised-learning-for-solving-jigsaw-puzzles-with-generative-adversarial-networks
 
-#### создание панорам
+#### Создание панорам
 * http://matthewalunbrown.com/papers/ijcv2007.pdf
 * https://pyimagesearch.com/2016/01/11/opencv-panorama-stitching/
 * https://datahacker.rs/005-how-to-create-a-panorama-image-using-opencv-with-python/
@@ -151,7 +161,7 @@ https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отобр�
 * https://russianblogs.com/article/84121976861/
 * https://russianblogs.com/article/62961265120/ - с++ реализация
 
-#### создание панорам код
+#### Создание панорам код
 * https://github.com/fuenwang/PanoramaUtility
 * https://github.com/ndvinh98/Panorama/
 * https://github.com/VCL3D/DeepPanoramaLighting
@@ -160,7 +170,7 @@ https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отобр�
 * https://github.com/sheoranhimansh/AutoPanorama - хорошая реализация с использованием нескольких подходов
 * https://github.com/kregmi/cross-view-image-matching - подход на основе нейронных сетей
 
-#### готовые решения связанные с SLAM
+#### Готовые решения связанные с SLAM
 * http://introlab.github.io/rtabmap/
 * https://github.com/matlabbe/rtabmap_drone_example
 * https://github.com/generalized-intelligence/GAAS
@@ -175,8 +185,9 @@ https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отобр�
 * https://github.com/hku-mars/crossgap_il_rl
 * https://github.com/IeiuniumLux/Visual-SLAM
 * https://github.com/janinethoma/image_navigation_python
+* https://github.com/uzh-rpg/netvlad_tf_open
 
-#### симулятораы и все связанное
+#### Симулятораы и все связанное
 * https://docs.px4.io/main/en/simulation/
 * https://github.com/carla-simulator/carla
 * https://github.com/RobotecAI/ros2-for-unity
@@ -185,18 +196,25 @@ https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отобр�
 #### Проблемы AirSim
 * https://github.com/microsoft/AirSim/issues/4535
 
-#### обучения с подкреплением
+#### Обучения с подкреплением
 * https://github.com/carlo98/precision_landing_shaping_RL
 * https://github.com/observantbot/drone1D_ddpg
 * https://github.com/yoavalon/QuadcopterReinforcementLearning
 * https://github.com/RodgerLuo/CPS-Book-Chapter/tree/master
 * https://cetinkayakoc.net/docs/b11.pdf
 * https://arxiv.org/abs/2209.11094 - ускорение
+* https://github.com/marooncn/navbot
 
-#### интересно
+#### Интересно
 * https://habr.com/ru/articles/650013/
 * https://tanzdire.blogspot.com/2021/07/simultaneous-localization-and-mapping.html
 * https://towardsdatascience.com/netvlad-cnn-architecture-for-weakly-supervised-place-recognition-ce64b08bebaf
 * https://russianblogs.com/article/54282601005/
 * https://digitrain.ru/articles/158301/
+* https://link.springer.com/article/10.1007/s40747-023-01207-z#:~:text=Pose%20cells%20network%20is%20a,the%20X%20and%20Y%20axes
+
+#### Требует проверки
+* https://www.youtube.com/watch?v=5JEFe2_L4So
+* https://habr.com/ru/companies/singularis/articles/276595/
+
 

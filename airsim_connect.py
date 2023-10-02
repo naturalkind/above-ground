@@ -36,4 +36,3 @@ while True:
     img_rgb = img1d.reshape(response.height, response.width, 3)
 
     imgs(img_rgb)
-    
