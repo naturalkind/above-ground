@@ -1,10 +1,12 @@
 #### Unreal руководства
 * https://github.com/mikeroyal/Unreal-Engine-Guide
-##### Ландшафт
+
+#### Ландшафт
 * https://ue4daily.com/blog/realistic-mountain-scenes-in-ue4
 * https://www.youtube.com/watch?v=dCE-m_f3OCU&t=38s
 * https://www.youtube.com/watch?v=otOPdOHWqWY
-##### Сплайны
+
+#### Сплайны
 * https://www.youtube.com/watch?v=WHNOZyOuQv8
 * https://bluevoidstudios.com/spline-components-in-ue4/
 * https://unrealcpp.com/actor-line-trace/
@@ -27,18 +29,18 @@
 * https://www.youtube.com/watch?v=iGygYpXY75w - создание лифта
 * https://forums.unrealengine.com/t/c-video-tutorial-roller-coasters-path-following-rail-shooters/50241 - движение шарика по траектории
 
-##### Log в консоль
+#### Log в консоль
 * https://www.chrismccole.com/blog/logging-in-ue4-cpp
 * https://unrealcommunity.wiki/logging-lgpidy6i#logging-using-ue_log
 
-##### Временная шкала и кривая
+#### Временная шкала и кривая
 * https://forums.unrealengine.com/t/c-dynamic-curves/141555
 * https://forums.unrealengine.com/t/creating-and-using-ucurvefloat-in-unreal-engine-in-c-for-ftimeline/592214
 * https://nerivec.github.io/old-ue4-wiki/pages/timeline-in-c.html
 * https://forums.unrealengine.com/t/how-do-i-create-an-ucurvefloat/285521
 * https://nerivec.github.io/old-ue4-wiki/pages/curves-create-custom-cubic-curves-in-editor-for-use-in-code.html
 
-#####
+#### Ошибки и решение
 * https://forums.unrealengine.com/t/how-to-send-an-input-key-event-from-code/286270/2 - имитация действия пользователя
 * https://dzen.ru/a/YrwCqm8uRhkQ3Nro - настройка клавиш
 * https://www.vikram.codes/blog/ai/01-basic-navigation   
@@ -64,7 +66,7 @@
 * https://www.orfeasel.com/consuming-timelines-using-c/
 * https://www.vitorcantao.com/post/climbing-system/ - паркур
 
-##### Получение/сохранение изображения с камеры
+#### Получение/сохранение изображения с камеры
 * https://forums.unrealengine.com/t/select-camera-render-get-image/78200/3 - захват изображения
 * https://forums.unrealengine.com/t/save-render-target-to-file/480642
 * https://stackoverflow.com/questions/43218678/unreal-engine-accessing-saving-in-game-images-to-disk-without-blocking-game-thr
@@ -72,20 +74,20 @@
 * https://github.com/zipzit/UnrealCustomScreenCapture
 * https://github.com/finger563/unreal-camera-capture - UE5!!!
 
-##### Потоки 
+#### Потоки 
 * https://programmerall.com/article/83642333629/   
 
 #### Уроки Blender   
-https://www.youtube.com/watch?v=g7XKX3bm5ak&t=396s   
-https://vimeo.com/156786446   
-https://www.youtube.com/watch?v=dMUnKmz7u6s   
-https://www.youtube.com/watch?v=VtS9jS6X4xQ - создать текстуру из полигонов   
-https://www.youtube.com/watch?v=Rx-aOHCfTOw   
-https://www.youtube.com/watch?v=Mn8_Yfor4TA   
-https://www.youtube.com/watch?v=z5gYPaHSxoA   
-https://www.youtube.com/watch?v=UXD97l7ZT0w   
-https://www.youtube.com/watch?v=eq8718t7ZJk&t=184s -должно все работать   
-https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отображения нормалей   
+* https://www.youtube.com/watch?v=g7XKX3bm5ak&t=396s   
+* https://vimeo.com/156786446   
+* https://www.youtube.com/watch?v=dMUnKmz7u6s   
+* https://www.youtube.com/watch?v=VtS9jS6X4xQ - создать текстуру из полигонов   
+* https://www.youtube.com/watch?v=Rx-aOHCfTOw   
+* https://www.youtube.com/watch?v=Mn8_Yfor4TA   
+* https://www.youtube.com/watch?v=z5gYPaHSxoA   
+* https://www.youtube.com/watch?v=UXD97l7ZT0w   
+* https://www.youtube.com/watch?v=eq8718t7ZJk&t=184s -должно все работать   
+* https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отображения нормалей   
 
 #### детекторы дискрипторы
 * https://oil-mcut.github.io/chapter-7/
@@ -204,6 +206,9 @@ https://www.youtube.com/watch?v=00gF5o_aVn0&t=59s - проблема отобр�
 * https://cetinkayakoc.net/docs/b11.pdf
 * https://arxiv.org/abs/2209.11094 - ускорение
 * https://github.com/marooncn/navbot
+* https://www.deeplearningwizard.com/deep_learning/deep_reinforcement_learning_pytorch/bellman_mdp/
+* https://www.youtube.com/watch?v=kAWbEUUT8bw - обучение нескольких агентов
+* 
 
 #### Интересно
 * https://habr.com/ru/articles/650013/
