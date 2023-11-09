@@ -22,7 +22,7 @@ python3 glue_part.py
 + [Собранная информацияь по теме](https://github.com/naturalkind/above-ground/blob/main/info/info.md)
 + [Собранная информацияь по unreal/blender](https://github.com/naturalkind/above-ground/blob/main/info/game.md)
 
-![Иллюстрация к проекту](https://github.com/naturalkind/above-ground/blob/main/media-info/%D0%A1%D0%BB%D0%B0%D0%B9%D0%B4%201.png)
+![Иллюстрация к проекту](https://github.com/naturalkind/above-ground/blob/main/media/%D0%A1%D0%BB%D0%B0%D0%B9%D0%B4%201.png)
 
 ### Нужно сделать
 - [x] нарезать разного размера изображение, из снимка местности   

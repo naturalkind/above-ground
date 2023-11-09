@@ -55,37 +55,45 @@ def task():
         
 #        idx += 1
 
+#def task2():
+#    print ("-------------------->")
+#    z = 5
+#    landed = client2.getMultirotorState().landed_state
+#    if landed == airsim.LandedState.Landed:
+#        print("taking off...")
+#        client2.takeoffAsync().join()
+#    else:
+#        print("already flying...")
+#        client2.hoverAsync().join()
+#    print("make sure we are hovering at {} meters...".format(z))
+
+#    if z > 5:
+#        # AirSim uses NED coordinates so negative axis is up.
+#        # z of -50 is 50 meters above the original launch point.
+#        client2.moveToZAsync(-z, 5).join()
+#        client2.hoverAsync().join()
+#        time.sleep(5)
+
+#    if z > 10:
+#        print("come down quickly to 10 meters...")
+#        z = 10
+#        client2.moveToZAsync(-z, 3).join()
+#        client2.hoverAsync().join()
+
+#    print("landing...")
+#    client2.landAsync().join()
+#    print("disarming...")
+#    client2.armDisarm(False)
+#    client2.enableApiControl(False)
+#    print("done.")
+    
 def task2():
     print ("-------------------->")
-    z = 5
-    landed = client2.getMultirotorState().landed_state
-    if landed == airsim.LandedState.Landed:
-        print("taking off...")
-        client2.takeoffAsync().join()
-    else:
-        print("already flying...")
-        client2.hoverAsync().join()
-    print("make sure we are hovering at {} meters...".format(z))
+    client2.takeoffAsync().join()
+    client2.moveToPositionAsync(all_data[10][0], all_data[10][1], all_data[10][2], 1).join()
 
-    if z > 5:
-        # AirSim uses NED coordinates so negative axis is up.
-        # z of -50 is 50 meters above the original launch point.
-        client2.moveToZAsync(-z, 5).join()
-        client2.hoverAsync().join()
-        time.sleep(5)
 
-    if z > 10:
-        print("come down quickly to 10 meters...")
-        z = 10
-        client2.moveToZAsync(-z, 3).join()
-        client2.hoverAsync().join()
 
-    print("landing...")
-    client2.landAsync().join()
-    print("disarming...")
-    client2.armDisarm(False)
-    client2.enableApiControl(False)
-    print("done.")
 
 if __name__ == "__main__":
 
