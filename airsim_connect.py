@@ -9,11 +9,25 @@ from threading import Thread
 from multiprocessing import Process
 
 all_data = []
+origin_UE = np.array([0.0, 0.0, 910.0])
+z = -20
+
+def convert_pos_UE_to_AS(origin_UE : np.array, pos_UE : np.array):
+    pos = np.zeros(3, dtype=np.float)
+    pos[0] = pos_UE[0] - origin_UE[0]
+    pos[1] = pos_UE[1] - origin_UE[1]
+    pos[2] = - pos_UE[2] + origin_UE[2]
+    return pos / 100
+
+
 # open file coord from spline
 with open('/media/sadko/unrealdir/AboveGenSim/Saved/CoordData/test.txt','r') as file:
     for line in file:
         coord_list = [float(i.split("=")[-1]) for i in line.split("\n")[0].split(" ")]
-        all_data.append(coord_list )
+        #all_data.append(coord_list)
+        print (coord_list)
+        all_data.append(airsim.Vector3r(coord_list[0],coord_list[1], z))
+        #all_data.append(airsim.Vector3r(convert_pos_UE_to_AS(origin_UE, np.array(coord_list))))
         #print(coord_list)
 global idx
 idx = 0
@@ -54,6 +68,10 @@ def task():
         imgs(img_rgb)
         
 #        idx += 1
+        pos = client.getMultirotorState().kinematics_estimated.position
+        #print (pos)
+
+
 
 #def task2():
 #    print ("-------------------->")
@@ -86,20 +104,45 @@ def task():
 #    client2.armDisarm(False)
 #    client2.enableApiControl(False)
 #    print("done.")
-    
+
+
 def task2():
-    print ("-------------------->")
-    client2.takeoffAsync().join()
-    client2.moveToPositionAsync(all_data[10][0], all_data[10][1], all_data[10][2], 1).join()
+    landed = client2.getMultirotorState().landed_state
+    if landed == airsim.LandedState.Landed:
+        print("taking off...")
+        client2.takeoffAsync().join()
+    else:
+        print("already flying...")
+        client2.hoverAsync().join()    
+       #client2.landAsync().join()
+    client2.moveToZAsync(-5, 5).join()
+#    client2.hoverAsync().join()
+#    print (dir(client2), "-------------------->", all_data[10][0], all_data[10][1], all_data[10][2], landed, airsim.LandedState.Landed)
+    
+    
+    print("flying on path...") #all_data
+    result = client2.moveOnPathAsync(all_data, 12, 120, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1).join()
+#    result = client2.moveOnPathAsync([airsim.Vector3r(125,0,z),
+#                                     airsim.Vector3r(125,-130,z),
+#                                     airsim.Vector3r(0,-130,z),
+#                                     airsim.Vector3r(0,0,z)],
+#                            12, 120,
+#                            airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1).join()
+    
+    print ("----------------------->", result)
+    
+#    client2.moveToZAsync(-5, 5).join()
+#    client2.hoverAsync().join()
 
 
+    #client2.takeoffAsync().join()
+    #client2.moveToPositionAsync(all_data[10][0], all_data[10][1], all_data[10][2], 1).join()
 
 
+# ----------> https://gitmemories.com/microsoft/AirSim/issues/4691
+# ----------> https://github.com/Microsoft/AirSim/blob/main/PythonClient/multirotor/path.py
 if __name__ == "__main__":
 
-    z = 5
-    if len(sys.argv) > 1:
-        z = float(sys.argv[1])
     ### connect to the AirSim simulator
     client = airsim.MultirotorClient()
     client.confirmConnection()
@@ -110,10 +153,10 @@ if __name__ == "__main__":
     
     
     client2 = airsim.MultirotorClient()
+    client2.reset()
     client2.confirmConnection()
     client2.enableApiControl(True)
     client2.armDisarm(True)
-    
     
     # create a thread
 #    thread = Thread(target=task)
