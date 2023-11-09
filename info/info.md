@@ -1,5 +1,7 @@
 #### Unreal руководства
 * https://github.com/mikeroyal/Unreal-Engine-Guide
+* https://github.com/JeremyBYU/airsimgeo
+* https://github.com/Mayankm96/airsim_img_publisher/ - сохранение изображения с камеры
 
 #### Ландшафт
 * https://ue4daily.com/blog/realistic-mountain-scenes-in-ue4
@@ -73,6 +75,9 @@
 * https://github.com/TimmHess/UnrealImageCapture - рабочее решение
 * https://github.com/zipzit/UnrealCustomScreenCapture
 * https://github.com/finger563/unreal-camera-capture - UE5!!!
+* https://github.com/microsoft/AirSim/wiki/cameras_positioning - расположение камеры
+* https://github.com/Microsoft/AirSim/issues/222 - вращение камеры
+* https://microsoft.github.io/AirSim/image_apis/#what-does-pixel-values-mean-in-different-image-types - типы данных
 
 #### Потоки 
 * https://programmerall.com/article/83642333629/   
@@ -208,7 +213,9 @@
 * https://github.com/marooncn/navbot
 * https://www.deeplearningwizard.com/deep_learning/deep_reinforcement_learning_pytorch/bellman_mdp/
 * https://www.youtube.com/watch?v=kAWbEUUT8bw - обучение нескольких агентов
-* 
+* https://arxiv.org/pdf/1909.06993.pdf
+* https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation/tree/5ac6f889bb81a68ef3bb7d2bacfee8cbc2909ccd
+* https://github.com/microsoft/AirSim-Drone-Racing-Lab
 
 #### Интересно
 * https://habr.com/ru/articles/650013/
