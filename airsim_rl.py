@@ -36,7 +36,7 @@ if __name__ == "__main__":
                     "above:airsim-drone-sample-v0",
                     ip_address="127.0.0.1",
                     step_length=0.25,
-                    image_shape=(144, 256, 1),
+                    image_shape=(144, 256, 3),
                 )
             )
         ]

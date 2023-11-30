@@ -67,6 +67,8 @@
 * https://www.froyok.fr/blog/2019-03-creating-seamless-portals-in-unreal-engine-4/
 * https://www.orfeasel.com/consuming-timelines-using-c/
 * https://www.vitorcantao.com/post/climbing-system/ - паркур
+* https://github.com/Microsoft/AirSim/issues/154 - сегментация
+* https://github.com/microsoft/AirSim/issues/1330 - изображение глубины
 
 #### Получение/сохранение изображения с камеры
 * https://forums.unrealengine.com/t/select-camera-render-get-image/78200/3 - захват изображения
@@ -210,12 +212,18 @@
 * https://github.com/RodgerLuo/CPS-Book-Chapter/tree/master
 * https://cetinkayakoc.net/docs/b11.pdf
 * https://arxiv.org/abs/2209.11094 - ускорение
-* https://github.com/marooncn/navbot
+* https://github.com/marooncn/navbot - запустил проверил
 * https://www.deeplearningwizard.com/deep_learning/deep_reinforcement_learning_pytorch/bellman_mdp/
 * https://www.youtube.com/watch?v=kAWbEUUT8bw - обучение нескольких агентов
 * https://arxiv.org/pdf/1909.06993.pdf
-* https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation/tree/5ac6f889bb81a68ef3bb7d2bacfee8cbc2909ccd
+* https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
 * https://github.com/microsoft/AirSim-Drone-Racing-Lab
+* https://github.com/microsoft/AirSim-NeurIPS2019-Drone-Racing - старая версия
+* https://github.com/Randy-F/RL-navigation/
+* https://arxiv.org/pdf/2103.08624v1.pdf
+* https://arxiv.org/pdf/1705.02550.pdf
+* https://github.innominds.com/ZJU-FAST-Lab/Fast-Racing
+
 
 #### Интересно
 * https://habr.com/ru/articles/650013/

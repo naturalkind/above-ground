@@ -22,25 +22,13 @@ def imgs(x):
 # https://gist.github.com/laurelkeys/cf198df240854f8ea107524ad1c5e22d
 # https://github.aiurs.co/ethz-asl/unreal_airsim/blob/master/docs/coordinate_systems.md
 
-
-def to_NED(coords_UE4, ground_offset_NED, player_start_UE4):
-    ''' Converts Unreal coordinates to NED system.
-        Assumes PlayerStart is at (0, 0, 0) in AirSim's local NED coordinate system. '''
-    #print (coords_UE4, "\n", ground_offset_NED,  "\n",  player_start_UE4)
-    
-    coords_NED = coords_UE4 - player_start_UE4  # Unreal uses cm and +z aiming up
-    coords_NED.z_val *= -1
-    coords_NED *= 0.01
-    coords_NED = coords_NED + ground_offset_NED
-    return coords_NED.to_numpy_array()
-
-
-#def to_NED(xyz):
-#    """ Unreal by default is in centimeters and z is positive-up.
-#    AirSim is in meters and z is positive-down."""
-#    xyz = xyz * 0.01
-#    xyz[2] = -xyz[2]
-#    return xyz
+def convert_pos_UE_to_AS(origin_UE : np.array, pos_UE : np.array):
+    pos = np.zeros(3, dtype=np.float)
+    pos[0] = pos_UE[0] - origin_UE[0]
+    pos[1] = pos_UE[1] - origin_UE[1]
+    pos[2] = -5
+#    pos[2] = - pos_UE[2] + origin_UE[2]
+    return pos / 100
 
 
 class AirSimDroneEnv(AirSimEnv):
@@ -63,10 +51,12 @@ class AirSimDroneEnv(AirSimEnv):
         self.ground_offset_NED = self.drone.simGetVehiclePose().position  # assumes the drone is at PlayerStart
         assert self.ground_offset_NED.x_val == self.ground_offset_NED.y_val == 0
         
+        self.origin_UE = self.drone.getMultirotorState().kinematics_estimated.position.to_numpy_array()
         # load data coord
-        self.data = self.load_coord()[4:10]
+        self.data = self.load_coord()#[4:10]
+        self.data2 = self.load_coord2()#[4:10]
         
-        
+        self.data_to_learn = [d.to_numpy_array() for d in self.data]
         
         self.action_space = spaces.Discrete(7)
         self._setup_flight()
@@ -85,15 +75,24 @@ class AirSimDroneEnv(AirSimEnv):
 
 
     def load_coord(self):
-        data = []
+        coord_list = []
         # open file coord from spline
         with open('/media/sadko/unrealdir/AboveGenSim/Saved/CoordData/coord_scren.txt','r') as file:
             for line in file:
-                coord_list = [float(i.split("=")[-1]) for i in line.split("\n")[0].split(" ")]
-                coord_list = airsim.Vector3r(coord_list[0], coord_list[1], coord_list[2])
-                data.append(to_NED(coord_list, self.ground_offset_NED, self.player_start_UE4))
-        return data
+                data = [float(i.split("=")[-1]) for i in line.split("\n")[0].split(" ")]
+                data = convert_pos_UE_to_AS(self.origin_UE, np.array(data))
+                coord_list.append(airsim.Vector3r(data[0], data[1], data[2]))
+        return coord_list  
 
+    def load_coord2(self):
+        coord_list = []
+        # open file coord from spline
+        with open('/media/sadko/unrealdir/AboveGenSim/Saved/CoordData/test.txt','r') as file:
+            for line in file:
+                data = [float(i.split("=")[-1]) for i in line.split("\n")[0].split(" ")]
+                data = convert_pos_UE_to_AS(self.origin_UE, np.array(data))
+                coord_list.append(airsim.Vector3r(data[0], data[1], data[2]))
+        return coord_list 
 
     def __del__(self):
         self.drone.reset()
@@ -107,8 +106,8 @@ class AirSimDroneEnv(AirSimEnv):
 #        self.drone.moveToPositionAsync(-0.55265, -31.9786, -19.0225, 10).join()
 #        self.drone.moveByVelocityAsync(1, -0.67, -0.8, 5).join()
 
-        print (self.data[5][0])
-        self.drone.moveToPositionAsync(float(self.data[5][0]), float(self.data[5][1]), float(self.data[5][2]), 10).join()
+        data = self.data2[0].to_numpy_array()
+#        self.drone.moveToPositionAsync(int(data[0]), int(data[1]), int(data[2]), 5).join()
         self.drone.moveByVelocityAsync(1, -0.67, -0.8, 5).join()
 
 # https://microsoft.github.io/AirSim/image_apis/
@@ -128,9 +127,10 @@ class AirSimDroneEnv(AirSimEnv):
         img1d = np.fromstring(responses[0].image_data_uint8, dtype=np.uint8) 
         # reshape array to 4 channel image array H X W X 4
         img_rgb = img1d.reshape(responses[0].height, responses[0].width, 3)
-#        imgs(img_rgb)
-        return img_rgb[:, :, :1].reshape([responses[0].height, responses[0].width, 1])
-
+#        imgs(img_rgb[:, :, :1])
+#        return img_rgb[:, :, :1].reshape([responses[0].height, responses[0].width, 1])
+#        imgs(img_rgb[:, :, :])
+        return img_rgb[:, :, :].reshape([responses[0].height, responses[0].width, 3])
 
         
 
@@ -164,7 +164,7 @@ class AirSimDroneEnv(AirSimEnv):
         beta = 1
 
         z = -10
-        pts = self.data
+        pts = self.data_to_learn
 #        pts = [
 #            np.array([-0.55265, -31.9786, -19.0225]),
 #            np.array([48.59735, -63.3286, -60.07256]),
@@ -186,7 +186,8 @@ class AirSimDroneEnv(AirSimEnv):
         if self.state["collision"]:
             reward = -100
         else:
-            dist = 10000000
+#            dist = 10000000
+            dist = 10
             for i in range(0, len(pts) - 1):
                 dist = min(
                     dist,
@@ -220,7 +221,6 @@ class AirSimDroneEnv(AirSimEnv):
         self._do_action(action)
         obs = self._get_obs()
         reward, done = self._compute_reward()
-        print ("STEP")
         return obs, reward, done, self.state
 
     def reset(self):
