@@ -228,8 +228,8 @@ def main(tracker_arg, dict_):
     Kd = 6.404490165264038
 
     # Set target position on the screen
-    target_position = (client.getMultirotorState().kinematics_estimated.position.x_val+10.0, 
-                       client.getMultirotorState().kinematics_estimated.position.y_val-10.0)
+    target_position = (client.getMultirotorState().kinematics_estimated.position.x_val+2.0, 
+                       client.getMultirotorState().kinematics_estimated.position.y_val-2.0)
     
     # Initialize PID controller for x and y axes
     pid_x = PIDController(Kp, Ki, Kd)
@@ -257,8 +257,7 @@ def main(tracker_arg, dict_):
             #client.moveByVelocityAsync(control_signal_x, control_signal_y, quadcopter_velocity.z_val, 0.1).join()
             
             # Adjust throttle based on PID output
-            client.moveByRC(rcdata = airsim.RCData(throttle = control_signal_y,
-                                                   roll=control_signal_x,
+            client.moveByRC(rcdata = airsim.RCData(roll=control_signal_x,
                                                    is_initialized = True,
                                                    is_valid = True))
 
