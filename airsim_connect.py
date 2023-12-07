@@ -138,15 +138,15 @@ def task2():
 #        client2.landAsync().join()
     client2.moveToZAsync(-5, 5).join()
     print("flying on coord position...") 
-    for idx, data in enumerate(all_data):
-        data = data.to_numpy_array()
-        print (f"Point idx {idx}, CoordPath:", data) 
-        
-#        client2.moveToPositionAsync(int(data[0]), int(data[1]), -int(data[2]), 5).join()
-        client2.moveToPositionAsync(int(data[0]), int(data[1]), 0, 5).join()
+#    for idx, data in enumerate(all_data):
+#        data = data.to_numpy_array()
+#        print (f"Point idx {idx}, CoordPath:", data) 
+#        
+##        client2.moveToPositionAsync(int(data[0]), int(data[1]), -int(data[2]), 5).join()
+#        client2.moveToPositionAsync(int(data[0]), int(data[1]), 0, 5).join()
     
-#    print("flying on path...") 
-#    result = client2.moveOnPathAsync(all_data, 12, 120, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1).join()
+    print("flying on path...") 
+    result = client2.moveOnPathAsync(all_data, 12, 120, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1).join()
     
 #    result = client2.moveOnPathAsync(all_data[:10], 12, 120, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1).join()
 #    result = client2.moveOnPathAsync([airsim.Vector3r(125,0,z),

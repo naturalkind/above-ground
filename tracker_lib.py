@@ -3,7 +3,6 @@ import time
 import numpy as np
 
 # Калибровка
-
 class TrackerLib(object):
     def __init__(self):
         # initialize the known distance from the camera to the object, which
@@ -208,7 +207,6 @@ class TrackerLib(object):
             seconds = end_time - start_time
             fps = 1.0 / seconds
             
-            
             cv2.putText(img, f"{int(fps)} fps", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,0,255),2) #cv2.FONT_HERSHEY_COMPLEX
             
             cv2.imshow("win", img)
@@ -222,84 +220,15 @@ if __name__ == "__main__":
     lib_start = TrackerLib()
     #print (dir(lib_start))
     lib_start.start_stream()
+    
 # https://www.section.io/engineering-education/approximating-the-speed-of-an-object-and-its-distance/
 # https://gist.github.com/Pawandeep-prog/48725026639a841e67081094b7db033a
 # https://ai.stackexchange.com/questions/25074/how-to-calculate-the-distance-between-the-camera-and-an-object-using-computer-vi
 # https://www.baeldung.com/cs/cv-compute-distance-from-object-video
 
 
-
 # https://pythonprogramming.net/detecting-distances-self-driving-car/
 # https://github.com/mandoo92/DeepSort_OpenCV/tree/main
 # https://github.innominds.com/shaoshengsong/DeepSORT
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
