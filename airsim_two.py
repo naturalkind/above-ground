@@ -65,10 +65,10 @@ import math
 all_data = []
 origin_UE = np.array([0.0, 0.0, 0.0]) #910.0
 
-client = airsim.MultirotorClient() #ip="192.168.1.100", port = 41451
+client = airsim.MultirotorClient(ip="192.168.1.100", port=41451) #ip="192.168.1.100", port = 41451
 client.confirmConnection()
 client.reset()
-
+print ("START")
 class KalmanFilterPID:
     def __init__(self, Kp, Ki, Kd, dt):
         # PID gains
@@ -149,12 +149,12 @@ def load_data():
             coord_list = convert_pos_UE_to_AS(origin_UE, np.array(coord_list))
             all_data.append(airsim.Vector3r(coord_list[0], coord_list[1], coord_list[2]))
       
-    print (all_data[0], "LOADING DONE") 
+    print ("LOADING DATA SPLINE DONE") 
            
 # получение изображения из airsim
-def image_task(tracker_arg, dict_):
+def image_task(tracker_arg, dict_, name_drone):
     # Подключение к airsim
-    client = airsim.MultirotorClient() #ip="192.168.1.100", port = 41451
+    client = airsim.MultirotorClient(ip="192.168.1.100", port=41451) #ip="192.168.1.100", port = 41451
     client.confirmConnection()
     #client.reset()
 
@@ -181,7 +181,8 @@ def image_task(tracker_arg, dict_):
         #'DisparityNormalized', 'Infrared', 'OpticalFlow', 
         #'OpticalFlowVis', 'Scene', 'Segmentation', 'SurfaceNormals'
 
-        responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False)])
+        responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False)], 
+                                        vehicle_name=name_drone)
 #        responses = client.simGetImages([airsim.ImageRequest("3", airsim.ImageType.Segmentation, False, False)])
         response = responses[0]
         # get numpy array
@@ -190,12 +191,15 @@ def image_task(tracker_arg, dict_):
         img = img1d.reshape(response.height, response.width, 3)
         img_center = lib_start.get_center(img, 0, 0, img.shape[1], img.shape[0])
         
-        field_angle = calculate_field_angle(img.shape[1], img.shape[0])
-        #90#
-        print (field_angle)
+        #field_angle = calculate_field_angle(img.shape[1], img.shape[0]) # 90*
+        #print (field_angle)
         if lib_start.state > 1:
             cv2.rectangle(img, lib_start.p1, lib_start.p2, (255, 0, 0), 10)  
-            bbox = (lib_start.p1[0], lib_start.p1[1], lib_start.p2[0]-lib_start.p1[0], lib_start.p2[1]-lib_start.p1[1])
+            bbox = (lib_start.p1[0], 
+                    lib_start.p1[1], 
+                    lib_start.p2[0]-lib_start.p1[0], 
+                    lib_start.p2[1]-lib_start.p1[1])
+                    
             lib_start.tracker.init(img, bbox) 
             lib_start.init_switch = True
             lib_start.state = 0
@@ -212,7 +216,6 @@ def image_task(tracker_arg, dict_):
                 # расстояние от цента обьекта до центра экрана  
                 x_dist = (obj_center[0] - img_center[0])**2
                 y_dist = (obj_center[1] - img_center[1])**2 
-#                    cv2.putText(img, "{}".format(int(np.sqrt(x_dist + y_dist))), (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
              
                 #img_center
                 w_sector, h_sector = img.shape[1]//2, img.shape[0]//2
@@ -220,55 +223,79 @@ def image_task(tracker_arg, dict_):
                 g = int(np.sqrt(x_dist + y_dist))
                 p_dist = (g/M) * 100
                 
+                cv2.putText(img, f"distance: {int(p_dist)}%", (bbox[0],bbox[1]-10),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+                
+                
                 # левая гипотенуза
-                M1 = int(np.sqrt(img.shape[1]**2 + img.shape[0]**2))
-                g1_point = int(np.sqrt(bbox[0]**2 + bbox[1]**2))
-                p_dist_point = (g1_point/M1) * 100
-                cv2.line(img, (0,0), (bbox[0], bbox[1]), (255,0,0), 4)
-                cv2.putText(img, f"{int(p_dist_point)}%", (bbox[0]//2,bbox[1]//2+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+#                M1 = int(np.sqrt(img.shape[1]**2 + img.shape[0]**2))
+#                g1_point = int(np.sqrt(bbox[0]**2 + bbox[1]**2))
+#                p_dist_point = (g1_point/M1) * 100
+#                cv2.line(img, (0,0), (bbox[0], bbox[1]), (255,0,0), 4)
+#                cv2.putText(img, f"{int(p_dist_point)}%", (bbox[0]//2,bbox[1]//2+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
                 
                 # правая гипотенуза 
-                cv2.line(img, (bbox[0]+bbox[2], bbox[1]+bbox[3]), (img.shape[1], img.shape[0]), (255,0,0), 4) 
-                x_, y_ = bbox[0]+bbox[2], bbox[1]+bbox[3]
-                x_, y_ = img.shape[1]-x_, img.shape[0]-y_
-                g2_point = int(np.sqrt(x_**2 + y_**2))
-                p_dist_point2 = (g2_point/M1) * 100  
-                A = (bbox[0]+bbox[2])+x_//2 
-                B = (bbox[1]+bbox[3])+y_//2 
-                cv2.putText(img, f"{int(p_dist_point2)}%", (A, B),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                
-                distance = (p_dist+p_dist_point+p_dist_point2)/3
-                cv2.putText(img, f"distance: {int(p_dist)}%, sum dis: {int(distance)}%", (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+#                cv2.line(img, (bbox[0]+bbox[2], bbox[1]+bbox[3]), (img.shape[1], img.shape[0]), (255,0,0), 4) 
+#                x_, y_ = bbox[0]+bbox[2], bbox[1]+bbox[3]
+#                x_, y_ = img.shape[1]-x_, img.shape[0]-y_
+#                g2_point = int(np.sqrt(x_**2 + y_**2))
+#                p_dist_point2 = (g2_point/M1) * 100  
+#                A = (bbox[0]+bbox[2])+x_//2 
+#                B = (bbox[1]+bbox[3])+y_//2 
+#                cv2.putText(img, f"{int(p_dist_point2)}%", (A, B),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)                
 
                #PID контроллер ротация roll
-                #if -(dict_["current_height"]) > 0.1:
-                angle_to_obj = calculate_angle(img.shape[0], obj_center[0], img_center[0])
-                quadcopter_rotation = client.getMultirotorState().kinematics_estimated.orientation     
+                #angle_to_obj = calculate_angle(img.shape[0], obj_center[0], img_center[0])
+                quadcopter_rotation = client.getMultirotorState(
+                                                                vehicle_name=name_drone
+                                                                ).kinematics_estimated.orientation 
+                                                                    
                 roll, pitch, yaw = euler_from_quaternion(quadcopter_rotation)          
                 
                 X, Y, Z = quaternion_to_euler_angle_vectorized(quadcopter_rotation.w_val, quadcopter_rotation.x_val, quadcopter_rotation.y_val, quadcopter_rotation.z_val)
                 
                 # Calculate error for x and y axes
-#                error_x = Z - angle_to_obj
-                error_x = img_center[0] - obj_center[0]
+                error_x = img_center[0] - obj_center[0] # yaw
 
+                
+                w = client.getMultirotorState().kinematics_estimated.position.x_val #vehicle_name=name_drone
+                error_w = img_center[0] - obj_center[0]  
                 # Calculate control signals using PID controller
 #                control_signal_x = pid_x.update(Z, angle_to_obj)
-                control_signal_x = pid_x.update(img_center[0], obj_center[0])
-                control_signal_y = pid_y.update(Y, angle_to_obj)
+                control_signal_x = pid_x.update(img_center[0], obj_center[0]) # yaw
+                control_signal_w = pid_y.update(img_center[0], obj_center[0]) # roll
                 
+#                if img_center[0] > obj_center[0]:
+#                    control_signal_w = control_signal_w
+#                else:
+#                    control_signal_w = -int(control_signal_w)
                 # Adjust throttle based on PID output
                 # поворот на месте
-                client.moveByRC(rcdata = airsim.RCData(yaw=control_signal_x,
-                                                       is_initialized = True,
-                                                       is_valid = True))
-                
-#                client.moveByRC(rcdata = airsim.RCData(#throttle = dict_["throttle"],
-#                                                       roll=control_signal_x,
+#                client.moveByRC(rcdata = airsim.RCData(yaw=control_signal_x,
 #                                                       is_initialized = True,
-#                                                       is_valid = True))
+#                                                       is_valid = True), 
+#                                                       vehicle_name=name_drone) #roll=control_signal_w,
+                
+                client.moveByRC(rcdata = airsim.RCData(roll=control_signal_x,
+                                                       is_initialized = True,
+                                                       is_valid = True),
+                                                       vehicle_name=name_drone)
 
-                print (X, Y, Z, dict_["throttle"], dict_["pitch"], control_signal_x, angle_to_obj, error_x)
+#                client.moveByRC(rcdata = airsim.RCData(pitch = 200.0,
+#                                                       throttle = 100.0,
+#                                                       #yaw=control_signal_x,
+#                                                       #roll=0.0,
+#                                                       is_initialized = True,
+#                                                       is_valid = True)) 
+
+
+
+                print (X, Y, Z, 
+                      dict_["throttle"], 
+                      dict_["pitch"], 
+                      control_signal_x, 
+                      control_signal_w, 
+                      w, 
+                      obj_center[0])
                 time.sleep(0.01)  # Delay for stability                        
         # FPS варианты
         #fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)
@@ -280,41 +307,10 @@ def image_task(tracker_arg, dict_):
         if cv2.waitKey(1) & 0xff == ord('q'):
             break      
 
-def track_point(target_x, target_y):
-    # Подключение к airsim
-#    client = airsim.MultirotorClient()
-#    client.confirmConnection()
-#    client.enableApiControl(True)
-
-    # Настройка PID регулятора
-    pid_controller = PIDController()
-
-    while True:
-        # Получение текущего положения дрона
-        current_x, current_y = get_current_position(client)
-
-        # Вычисление ошибки между текущим и целевым положением
-        error_x = target_x - current_x
-        error_y = target_y - current_y
-
-        # Вычисление управляющего сигнала с использованием PID регулятора
-        control_signal = pid_controller.calculate(error_x, error_y)
-
-        # Применение управляющего сигнала к дрону
-        client.moveByVelocity(control_signal[0], control_signal[1], control_signal[2], 1)
-
-def get_current_position(client):
-    # Получение текущего положения дрона из airsim
-    position = client.getPosition()
-    current_x = position.x_val
-    current_y = position.y_val
-
-    return current_x, current_y
-
 def test_pid_up(tracker_arg, dict_, name_drone): #
     print (name_drone)
     # Connect to the AirSim simulator
-    client = airsim.MultirotorClient()
+    client = airsim.MultirotorClient(ip="192.168.1.100", port=41451)
     client.confirmConnection()
 #    client.reset()
 #    client.enableApiControl(False, name_drone) 
@@ -326,7 +322,7 @@ def test_pid_up(tracker_arg, dict_, name_drone): #
     # moveByManualAsync
     print (all_drone, client.isApiControlEnabled(vehicle_name=name_drone))
     # Set the target height for the PID controller (in meters)
-    target_height = -3 #-10
+    target_height = -6 #-10
 
     # Set the PID controller gains
 
@@ -357,6 +353,7 @@ def test_pid_up(tracker_arg, dict_, name_drone): #
 #    f_kalman = KalmanFilterPID(Kp, Ki, Kd, 0.1)
 
     # Start the main control loop
+    idx = 0
     while True:
         # Get the current height from the AirSim simulator
         current_height = client.getMultirotorState(vehicle_name=name_drone).kinematics_estimated.position.z_val
@@ -365,20 +362,20 @@ def test_pid_up(tracker_arg, dict_, name_drone): #
         # Calculate the PID output
         pid_output = pid_controller.update(current_height, target_height)
         dict_["throttle"] = -pid_output
-        
-        if -current_height > 2:
-            dict_["pitch"] = 2.0
-        else:
-            dict_["pitch"] = 2.0
+#        if idx > 300:
+#            if -current_height > 5.5:
+#                dict_["pitch"] = 2.0
+#            else:
+#                dict_["pitch"] = 1.0
         # Adjust throttle based on PID output
-        client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(#pitch = dict_["pitch"], # 5.0 max
+        client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(pitch = dict_["pitch"], # 5.0 max
                                                                            throttle = -pid_output,
                                                                            #yaw=0.0,
                                                                            #roll=0.0,
                                                                            is_initialized = True,
                                                                            is_valid = True))
         time.sleep(0.01)
-
+        idx+=1
 """
 В данном примере переменные image_width и image_height представляют ширину и высоту изображения соответственно.
 
@@ -518,9 +515,105 @@ def fly_on_path(tracker_arg, dict_, all_data, name_drone):
     landed = client.getMultirotorState().landed_state
     
     client.moveToZAsync(-2, 2, vehicle_name=name_drone).join()
-    #time.sleep(5)
-    result = client.moveOnPathAsync(all_data, 12, 120, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1, vehicle_name=name_drone).join()
+    time.sleep(5)
+#    result = client.moveOnPathAsync(all_data, 12, 120, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1, vehicle_name=name_drone).join()
+    result = client.moveOnPathAsync(all_data, 12, 12, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1, vehicle_name=name_drone).join()
     print("flying on path coord position...", name_drone) 
+
+
+def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
+
+    Kp = 0.745136137394194487*20
+    Ki = 0.00022393195314520642*20
+    Kd = 7.404490165264038*60
+  
+    # Создание подключения к AirSim
+    client = airsim.MultirotorClient(ip="192.168.1.100", port=41451)
+
+    # Подключение к симулятору AirSim
+    client.confirmConnection()
+
+    # Выравнивание перед движением
+    #client.enableApiControl(True)
+    #client.armDisarm(True)
+    #client.takeoffAsync().join()
+    
+    # Create a PID controller object throttle
+    pid_controller = PIDController(Kp, Ki, Kd) # throttle
+    pid_x = PIDController(Kp, Ki, Kd) 
+    pid_y = PIDController(Kp, Ki, Kd)
+    
+    # Initialize PID controller for x and y axes
+    pid_pitch = PIDController(Kp, Ki, Kd)
+    pid_roll = PIDController(Kp, Ki, Kd)
+    pid_yaw = PIDController(Kp, Ki, Kd)
+    
+#    f_kalman_x = KalmanFilterPID(Kp, Ki, Kd, 0.1)
+#    f_kalman_y = KalmanFilterPID(Kp, Ki, Kd, 0.1)
+    # Основной цикл движения
+    while True:
+        # Получение текущего положения quadrocopter'а
+#        "BP_FlyingPawn_11"
+        quadrocopter_rotation = client.getMultirotorState(vehicle_name=name_drone).kinematics_estimated.orientation         
+        quadrocopter_position = client.getMultirotorState(vehicle_name=name_drone).kinematics_estimated.position
+        #current_height = quadrocopter_position.z_val
+        # Координаты объекта, за которым нужно двигаться
+#        "BP_FlyingPawn2_2"
+        target_rotation = client.getMultirotorState(vehicle_name=name_drone_target).kinematics_estimated.orientation
+        target_position = client.getMultirotorState(vehicle_name=name_drone_target).kinematics_estimated.position
+        #target_position = client.simGetObjectPose("BP_FlyingPawn2_2").position
+        #target_height = target_position.z_val#-3
+                                                            
+        roll_t, pitch_t, yaw_t = euler_from_quaternion(target_rotation)   
+        roll_q, pitch_q, yaw_q = euler_from_quaternion(quadrocopter_rotation)       
+#        print (roll_t, pitch_t, yaw_t)
+#        print (roll_q, pitch_q, yaw_q)
+#        roll_t, pitch_t, yaw_t = quaternion_to_euler_angle_vectorized(target_rotation.w_val,
+#                                                                      target_rotation.x_val, 
+#                                                                      target_rotation.y_val, 
+#                                                                      target_rotation.z_val)
+#        roll_q, pitch_q, yaw_q = quaternion_to_euler_angle_vectorized(quadrocopter_rotation.w_val,
+#                                                                      quadrocopter_rotation.x_val, 
+#                                                                      quadrocopter_rotation.y_val, 
+#                                                                      quadrocopter_rotation.z_val)
+
+
+
+        ####################################
+        ### Вращение !!!
+        ####################################
+        #current_value, target_value
+        #control_signal_x = pid_x.update(target_position.x_val, quadrocopter_position.x_val) # yaw
+        control_signal_pitch = pid_pitch.update(pitch_q, pitch_t)  # pitch 
+        control_signal_roll = pid_roll.update(roll_q, roll_t) # roll  
+        control_signal_yaw = pid_yaw.update(yaw_q, yaw_t) # yaw  
+        
+        
+        
+        ####################################
+        ### Высота !!!
+        ####################################
+
+        #print (current_height, target_height, pid_output)
+        control_signal_x = pid_x.update(quadrocopter_position.x_val, target_position.x_val) # yaw
+        control_signal_y = pid_y.update(quadrocopter_position.y_val, target_position.y_val) # roll
+        pid_output = pid_controller.update(quadrocopter_position.z_val, target_position.z_val)
+#        control_signal_x = f_kalman_x.update(target_position.x_val, quadrocopter_position.x_val) # yaw
+#        control_signal_y = f_kalman_y.update(target_position.y_val, quadrocopter_position.y_val) # roll
+        
+        ####################################
+        
+        
+        client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(pitch = control_signal_pitch, # наклон
+                                                                        throttle = -pid_output, # тяга
+                                                                        yaw=control_signal_yaw, # поворот на месте
+                                                                        roll=control_signal_roll, # рысканье
+                                                                        is_initialized = True,
+                                                                        is_valid = True))
+        #time.sleep(0.0001) 
+        # Влияет время задержки и сигналы
+
+
 
 if __name__ == "__main__":
     load_data()
@@ -533,22 +626,26 @@ if __name__ == "__main__":
         dict_["throttle"] = 0
         dict_["pitch"] = 0
         
-        # run the thread
-        thread = Process(target=image_task, args=(num, dict_), daemon=True)
-        thread.start()
-     
-        thread2 = Process(target=fly_on_path, args=(num, dict_, all_data, "BP_FlyingPawn2_2"), daemon=True)
-        thread2.start()
+#        # run the thread
+#        thread = Process(target=image_task, args=(num, dict_, "BP_FlyingPawn_11"), daemon=True)
+#        thread.start()
+#        # run the thread
+        thread1 = Process(target=from_fly_path, args=(num, dict_, "BP_FlyingPawn_4", "BP_FlyingPawn2_7"), daemon=True) 
+        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"
+#          
+        thread2 = Process(target=fly_on_path, args=(num, dict_, all_data, "BP_FlyingPawn2_7"), daemon=True)
+        thread2.start() #"BP_FlyingPawn2_2"
         
 #        thread3 = Process(target=test_pid_up, args=(num, dict_, "BP_FlyingPawn2_2"), daemon=True)
 #        thread3.start()
         
-        thread4 = Process(target=test_pid_up, args=(num, dict_, "BP_FlyingPawn_11"), daemon=True)
-        thread4.start()
+#        thread4 = Process(target=test_pid_up, args=(num, dict_, "BP_FlyingPawn_4"), daemon=True)
+#        thread4.start()
         # wait for the thread to finish
         print('Waiting for the thread...')
-        thread.join()   
+#        thread.join() 
+        thread1.join()  
         thread2.join()
 #        thread3.join()
-        thread4.join()
+#        thread4.join()
 
