@@ -5,15 +5,7 @@ import numpy as np
 # Калибровка
 class TrackerLib(object):
     def __init__(self):
-        # initialize the known distance from the camera to the object, which
-        # in this case is ... mm
         print ("INIT")
-        KNOWN_DISTANCE = 30.0 # centimeter
-         
-        # initialize spec my box 
-        KNOWN_WIDTH = 7.7 # centimeter
-        KNOWN_HEIGHT = 10.5 # centimeter
-         
 
 ##        self.cap = cv2.VideoCapture(0)
 ##        # ROI in video
