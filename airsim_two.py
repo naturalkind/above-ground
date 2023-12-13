@@ -131,6 +131,7 @@ class PIDController:
         return output
 
 
+
 def convert_pos_UE_to_AS(origin_UE : np.array, pos_UE : np.array):
     z = -20
     pos = np.zeros(3, dtype=np.float)
@@ -604,13 +605,13 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
         ####################################
         
         
-        client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(pitch = control_signal_pitch, # наклон
+        client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(pitch = control_signal_x, # наклон
                                                                         throttle = -pid_output, # тяга
                                                                         yaw=control_signal_yaw, # поворот на месте
                                                                         roll=control_signal_roll, # рысканье
                                                                         is_initialized = True,
                                                                         is_valid = True))
-        #time.sleep(0.0001) 
+        time.sleep(0.0001) 
         # Влияет время задержки и сигналы
 
 
@@ -648,4 +649,5 @@ if __name__ == "__main__":
         thread2.join()
 #        thread3.join()
 #        thread4.join()
+
 
