@@ -62,8 +62,6 @@ import math
 
 """
 
-all_data = []
-origin_UE = np.array([0.0, 0.0, 0.0]) #910.0
 
 client = airsim.MultirotorClient(ip="192.168.1.100", port=41451) #ip="192.168.1.100", port = 41451
 client.confirmConnection()
@@ -142,22 +140,24 @@ def convert_pos_UE_to_AS(origin_UE : np.array, pos_UE : np.array):
     return pos / 100
 
 
-def load_data():
-    with open('/media/sadko/unrealdir/AboveGenSim/Saved/CoordData/test.txt','r') as file:
+# загрузка последовательности координат spline
+def load_data(file_name):
+    all_data = []
+    origin_UE = np.array([0.0, 0.0, 0.0]) #910.0
+    with open(file_name,'r') as file:
     #with open('/media/sadko/unrealdir/AboveGenSim/Saved/CoordData/coord_scren.txt','r') as file:
         for line in file:
             coord_list = [float(i.split("=")[-1]) for i in line.split("\n")[0].split(" ")]
             coord_list = convert_pos_UE_to_AS(origin_UE, np.array(coord_list))
             all_data.append(airsim.Vector3r(coord_list[0], coord_list[1], coord_list[2]))
-      
     print ("LOADING DATA SPLINE DONE") 
+    return all_data
            
 # получение изображения из airsim
 def image_task(tracker_arg, dict_, name_drone):
     # Подключение к airsim
     client = airsim.MultirotorClient(ip="192.168.1.100", port=41451) #ip="192.168.1.100", port = 41451
     client.confirmConnection()
-    #client.reset()
 
     Kp = 0.745136137394194487
     Ki = 0.00022393195314520642 
@@ -246,8 +246,7 @@ def image_task(tracker_arg, dict_, name_drone):
 
                #PID контроллер ротация roll
                 #angle_to_obj = calculate_angle(img.shape[0], obj_center[0], img_center[0])
-                quadcopter_rotation = client.getMultirotorState(
-                                                                vehicle_name=name_drone
+                quadcopter_rotation = client.getMultirotorState(vehicle_name=name_drone
                                                                 ).kinematics_estimated.orientation 
                                                                     
                 roll, pitch, yaw = euler_from_quaternion(quadcopter_rotation)          
@@ -271,19 +270,19 @@ def image_task(tracker_arg, dict_, name_drone):
 #                    control_signal_w = -int(control_signal_w)
                 # Adjust throttle based on PID output
                 # поворот на месте
-#                client.moveByRC(rcdata = airsim.RCData(yaw=control_signal_x,
-#                                                       is_initialized = True,
-#                                                       is_valid = True), 
-#                                                       vehicle_name=name_drone) #roll=control_signal_w,
-                
-                client.moveByRC(rcdata = airsim.RCData(roll=control_signal_x,
+                client.moveByRC(rcdata = airsim.RCData(yaw=control_signal_x,
                                                        is_initialized = True,
-                                                       is_valid = True),
-                                                       vehicle_name=name_drone)
+                                                       is_valid = True), 
+                                                       vehicle_name=name_drone) #roll=control_signal_w,
+                
+#                client.moveByRC(rcdata = airsim.RCData(roll=control_signal_x,
+#                                                       is_initialized = True,
+#                                                       is_valid = True),
+#                                                       vehicle_name=name_drone)
 
 #                client.moveByRC(rcdata = airsim.RCData(pitch = 200.0,
 #                                                       throttle = 100.0,
-#                                                       #yaw=control_signal_x,
+#                                                       yaw=control_signal_x,
 #                                                       #roll=0.0,
 #                                                       is_initialized = True,
 #                                                       is_valid = True)) 
@@ -323,20 +322,20 @@ def test_pid_up(tracker_arg, dict_, name_drone): #
     # moveByManualAsync
     print (all_drone, client.isApiControlEnabled(vehicle_name=name_drone))
     # Set the target height for the PID controller (in meters)
-    target_height = -6 #-10
+    target_height = -3 #-10
 
     # Set the PID controller gains
 
     # медленный взлёт
-#    Kp = 0.0645136137394194487
-#    Ki = 0.00022393195314520642 
-#    Kd = 6.404490165264038
+    Kp = 0.0645136137394194487
+    Ki = 0.00022393195314520642 
+    Kd = 6.404490165264038
 
     # быстрый взлёт
-    Kp = 0.745136137394194487
-    Ki = 0.00022393195314520642 
-    Kd = 7.404490165264038
-    
+#    Kp = 0.745136137394194487*10
+#    Ki = 0.00022393195314520642*10
+#    Kd = 7.404490165264038*100
+
     # Create a PID controller object Pitch
     pid_controller = PIDController(Kp, Ki, Kd) # throttle
     
@@ -349,8 +348,6 @@ def test_pid_up(tracker_arg, dict_, name_drone): #
 #                                           is_valid = True)) 
 #    time.sleep(1)
 
-
-#    start_time = time.time()
 #    f_kalman = KalmanFilterPID(Kp, Ki, Kd, 0.1)
 
     # Start the main control loop
@@ -369,14 +366,17 @@ def test_pid_up(tracker_arg, dict_, name_drone): #
 #            else:
 #                dict_["pitch"] = 1.0
         # Adjust throttle based on PID output
-        client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(pitch = dict_["pitch"], # 5.0 max
+        client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(#pitch = dict_["pitch"], # 5.0 max
                                                                            throttle = -pid_output,
                                                                            #yaw=0.0,
                                                                            #roll=0.0,
                                                                            is_initialized = True,
                                                                            is_valid = True))
-        time.sleep(0.01)
-        idx+=1
+        time.sleep(0.0001)
+        #time.sleep(0.01)
+        print (-pid_output, current_height, target_height)
+        idx += 1
+        
 """
 В данном примере переменные image_width и image_height представляют ширину и высоту изображения соответственно.
 
@@ -617,8 +617,7 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
 
 
 if __name__ == "__main__":
-    load_data()
-
+    all_data = load_data('/media/sadko/unrealdir/AboveGenSim/Saved/CoordData/test.txt')
     num = Value('d', 0.0)
     with Manager() as manager:
         dict_ = manager.dict()
@@ -627,33 +626,36 @@ if __name__ == "__main__":
         dict_["throttle"] = 0
         dict_["pitch"] = 0
         
+        ####################
+        # Следить за обьектом
+        ####################
+        
 #        # run the thread
-#        thread = Process(target=image_task, args=(num, dict_, "BP_FlyingPawn_11"), daemon=True)
-#        thread.start()
-#        # run the thread
+#        thread0 = Process(target=image_task, args=(num, dict_, "BP_FlyingPawn_4"), daemon=True)
+#        thread0.start()# "BP_FlyingPawn_11"
+#        
+#        thread1 = Process(target=test_pid_up, args=(num, dict_, "BP_FlyingPawn_4"), daemon=True)
+#        thread1.start()# "BP_FlyingPawn2_2"
+#        
+#        # wait for the thread to finish
+#        print('Waiting for the thread...')
+#        thread0.join() 
+#        thread1.join()
+
+
+        ####################
+        # Полёт за дроном
+        ####################
+        
+        # run the thread
         thread1 = Process(target=from_fly_path, args=(num, dict_, "BP_FlyingPawn_4", "BP_FlyingPawn2_7"), daemon=True) 
-        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"
-#          
+        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"          
         thread2 = Process(target=fly_on_path, args=(num, dict_, all_data, "BP_FlyingPawn2_7"), daemon=True)
         thread2.start() #"BP_FlyingPawn2_2"
-        
-#        thread3 = Process(target=test_pid_up, args=(num, dict_, "BP_FlyingPawn2_2"), daemon=True)
-#        thread3.start()
-        
-#        thread4 = Process(target=test_pid_up, args=(num, dict_, "BP_FlyingPawn_4"), daemon=True)
-#        thread4.start()
         # wait for the thread to finish
         print('Waiting for the thread...')
-#        thread.join() 
         thread1.join()  
         thread2.join()
-#        thread3.join()
-#        thread4.join()
-
-####
-####
-
-
 
 
 

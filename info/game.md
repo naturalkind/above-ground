@@ -22,7 +22,7 @@ Engine/Binaries/ThirdParty/Mono/Linux/bin/mono  Engine/Binaries/DotNET/UnrealBui
 
 Запуск unreal   
 ```
-UnrealEngine-4.27.0-release/Engine/Binaries/Linux/UE4Editor
+UnrealEngine-4.27.0-release/Engine/Binaries/Linux/UE4Editor -settings="../settings.json"
 ```
 Отображение сплайна в игре
 ```

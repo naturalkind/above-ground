@@ -38,3 +38,4 @@ python3 glue_part.py
 - [ ] реализовать статью Mapping, Localization and Path Planning for Image-based Navigation using Visual Features and Map   
 - [ ] обучение с подкреплением   
 - [ ] удобный инструмент фотограметрии по одному изображениею местности (разрезать на куски исходное изображение для каждого куска создать несколько ракурсов)
+- [x] получить данные с пульта управления в airsim
