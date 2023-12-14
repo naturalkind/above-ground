@@ -124,15 +124,15 @@ class DroneSim():
         client_fly.reset()
         #print (self.client.isApiControlEnabled(vehicle_name=name_drone))
         # Set the PID controller gains
-        # медленный взлёт
-#        Kp = 0.0645136137394194487
-#        Ki = 0.00022393195314520642 
-#        Kd = 6.404490165264038
+        #  медленный взлёт
+        Kp = 0.0645136137394194487
+        Ki = 0.00022393195314520642 
+        Kd = 6.404490165264038
 
         # быстрый взлёт
-        Kp = 0.745136137394194487*10
-        Ki = 0.00022393195314520642*10 
-        Kd = 7.404490165264038*100
+#        Kp = 0.745136137394194487*10
+#        Ki = 0.00022393195314520642*10 
+#        Kd = 7.404490165264038*100
         
         # Create a PID controller object Pitch
         pid_controller = PIDController(Kp, Ki, Kd) # throttle
@@ -163,6 +163,8 @@ class DroneSim():
 #            time.sleep(0.01)
             fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)
             print ("fps:", int(fps), -pid_output, current_height, self.target_height)
+
+
             
 
 if __name__ == "__main__":
