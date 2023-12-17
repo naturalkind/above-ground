@@ -63,7 +63,7 @@ import math
 """
 
 
-client = airsim.MultirotorClient(ip="192.168.1.100", port=41451) #ip="192.168.1.100", port = 41451
+client = airsim.MultirotorClient() #ip="192.168.1.100", port = 41451
 client.confirmConnection()
 client.reset()
 print ("START")
@@ -156,7 +156,7 @@ def load_data(file_name):
 # получение изображения из airsim
 def image_task(tracker_arg, dict_, name_drone):
     # Подключение к airsim
-    client = airsim.MultirotorClient(ip="192.168.1.100", port=41451) #ip="192.168.1.100", port = 41451
+    client = airsim.MultirotorClient() #ip="192.168.1.100", port = 41451
     client.confirmConnection()
 
     Kp = 0.745136137394194487
@@ -310,7 +310,7 @@ def image_task(tracker_arg, dict_, name_drone):
 def test_pid_up(tracker_arg, dict_, name_drone): #
     print (name_drone)
     # Connect to the AirSim simulator
-    client = airsim.MultirotorClient(ip="192.168.1.100", port=41451)
+    client = airsim.MultirotorClient()#ip="192.168.1.100", port=41451
     client.confirmConnection()
 #    client.reset()
 #    client.enableApiControl(False, name_drone) 
@@ -522,6 +522,74 @@ def fly_on_path(tracker_arg, dict_, all_data, name_drone):
     print("flying on path coord position...", name_drone) 
 
 
+
+#def calculate_control_signal(position_error, orientation_error):
+#    # Коэффициенты PID регулятора
+#    Kp_position = 0.5
+#    Ki_position = 0.1
+#    Kd_position = 0.2
+
+#    Kp_orientation = 0.3
+#    Ki_orientation = 0.05
+#    Kd_orientation = 0.1
+
+#    # Интегральная ошибка
+#    integral_error_position = 0
+#    integral_error_orientation = 0
+
+#    # Прошлая ошибка
+#    previous_error_position = 0
+#    previous_error_orientation = 0
+
+#    # Вычисление позиционного компонента управляющего сигнала
+#    position_component = (
+#        Kp_position * position_error +
+#        Ki_position * integral_error_position +
+#        Kd_position * (position_error - previous_error_position)
+#    )
+
+#    # Обновление интегральной ошибки для позиционного компонента
+#    integral_error_position += position_error
+
+#    # Обновление прошлой ошибки для позиционного компонента
+#    previous_error_position = position_error
+
+#    # Вычисление ориентационного компонента управляющего сигнала
+#    orientation_component = (
+#        Kp_orientation * orientation_error +
+#        Ki_orientation * integral_error_orientation +
+#        Kd_orientation * (orientation_error - previous_error_orientation)
+#    )
+
+#    # Обновление интегральной ошибки для ориентационного компонента
+#    integral_error_orientation += orientation_error
+
+#    # Обновление прошлой ошибки для ориентационного компонента
+#    previous_error_orientation = orientation_error
+
+#    # Вычисление итогового управляющего сигнала
+#    pitch = position_component + orientation_component
+#    throttle = position_component - orientation_component
+#    roll = position_component + orientation_component
+
+#    # Возвращаем управляющий сигнал movebyrcdata
+#    return pitch, throttle, roll
+
+def calculate_control_signal(position_error, orientation_error):
+    # Рассчитываем значения управляющих сигналов
+    
+    # Рассчет управляющего сигнала pitch
+    pitch = position_error[0] + orientation_error[0]
+    
+    # Рассчет управляющего сигнала throttle
+    throttle = position_error[1] + orientation_error[1]
+    
+    # Рассчет управляющего сигнала roll
+    roll = position_error[2] + orientation_error[2]
+    
+    # Возвращаем значения управляющих сигналов
+    return pitch, throttle, roll
+
 def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
 
     Kp = 0.745136137394194487*20
@@ -529,7 +597,7 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
     Kd = 7.404490165264038*60
   
     # Создание подключения к AirSim
-    client = airsim.MultirotorClient(ip="192.168.1.100", port=41451)
+    client = airsim.MultirotorClient()#ip="192.168.1.100", port=41451
 
     # Подключение к симулятору AirSim
     client.confirmConnection()
@@ -592,7 +660,7 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
         
         
         ####################################
-        ### Высота !!!
+        ### Расположение !!!
         ####################################
 
         #print (current_height, target_height, pid_output)
@@ -602,19 +670,36 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
 #        control_signal_x = f_kalman_x.update(target_position.x_val, quadrocopter_position.x_val) # yaw
 #        control_signal_y = f_kalman_y.update(target_position.y_val, quadrocopter_position.y_val) # roll
         
-        ####################################
         
+        # Ошибка ориентации
+        error_yaw = yaw_t - yaw_q
+        error_roll = roll_t - roll_q
+        error_pitch = pitch_t - pitch_q
+        
+        # Ошибка позиции
+        error_x = target_position.x_val - quadrocopter_position.x_val
+        error_y = target_position.y_val - quadrocopter_position.y_val
+        error_z = target_position.z_val - quadrocopter_position.z_val
+        
+        #ZZZ = calculate_control_signal((error_x, error_y, error_z), (error_roll, error_pitch, error_yaw)) #pitch, throttle, roll
+        
+        #t_test = client.simGetFocusDistance("BP_PIPCamera_C_510", vehicle_name=name_drone)
+        #data_car = client.getDistanceSensorData(vehicle_name=name_drone)
+        print ((error_yaw+error_roll+error_pitch)/3, quadrocopter_position.x_val, target_position.x_val)
+
+        #control_signal_x, pid_output__, control_signal_roll = ZZZ
+        ####################################
         
         client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(pitch = control_signal_x, # наклон
                                                                         throttle = -pid_output, # тяга
-                                                                        yaw=control_signal_yaw, # поворот на месте
+                                                                        #yaw=control_signal_yaw, # поворот на месте
                                                                         roll=control_signal_roll, # рысканье
                                                                         is_initialized = True,
                                                                         is_valid = True))
+
         time.sleep(0.0001) 
         # Влияет время задержки и сигналы
-
-
+        
 
 if __name__ == "__main__":
     all_data = load_data('/media/sadko/unrealdir/AboveGenSim/Saved/CoordData/test.txt')
@@ -648,15 +733,15 @@ if __name__ == "__main__":
         ####################
         
         # run the thread
-        thread1 = Process(target=from_fly_path, args=(num, dict_, "BP_FlyingPawn_4", "BP_FlyingPawn2_7"), daemon=True) 
+        thread1 = Process(target=from_fly_path, args=(num, dict_, "BP_FlyingPawn_2", "BP_FlyingPawn2_5"), daemon=True) #"BP_FlyingPawn_4", "BP_FlyingPawn2_7"
         thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"          
-        thread2 = Process(target=fly_on_path, args=(num, dict_, all_data, "BP_FlyingPawn2_7"), daemon=True)
-        thread2.start() #"BP_FlyingPawn2_2"
+        thread2 = Process(target=fly_on_path, args=(num, dict_, all_data, "BP_FlyingPawn2_5"), daemon=True)
+        thread2.start() #"BP_FlyingPawn2_2"#"BP_FlyingPawn2_7"
         # wait for the thread to finish
         print('Waiting for the thread...')
         thread1.join()  
         thread2.join()
 
 
-
+#'__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'armDisarm', 'cancelLastTask', 'client', 'confirmConnection', 'enableApiControl', 'getBarometerData', 'getClientVersion', 'getDistanceSensorData', 'getGpsData', 'getHomeGeoPoint', 'getImuData', 'getLidarData', 'getMagnetometerData', 'getMinRequiredClientVersion', 'getMinRequiredServerVersion', 'getServerVersion', 'getSettingsString', 'isApiControlEnabled', 'isRecording', 'listVehicles', 'ping', 'reset', 'simAddDetectionFilterMeshName', 'simAddVehicle', 'simClearDetectionMeshNames', 'simContinueForFrames', 'simContinueForTime', 'simCreateVoxelGrid', 'simDestroyObject', 'simEnableFocusPlane', 'simEnableManualFocus', 'simEnableWeather', 'simFlushPersistentMarkers', 'simGetCameraInfo', 'simGetCollisionInfo', 'simGetCurrentFieldOfView', 'simGetDetections', 'simGetDistortionParams', 'simGetFilmbackSettings', 'simGetFocalLength', 'simGetFocusAperture', 'simGetFocusDistance', 'simGetGroundTruthEnvironment', 'simGetGroundTruthKinematics', 'simGetImage', 'simGetImages', 'simGetLensSettings', 'simGetLidarSegmentation', 'simGetMeshPositionVertexBuffers', 'simGetObjectPose', 'simGetObjectScale', 'simGetPresetFilmbackSettings', 'simGetPresetLensSettings', 'simGetSegmentationObjectID', 'simGetVehiclePose', 'simGetWorldExtents', 'simIsPause', 'simListAssets', 'simListSceneObjects', 'simLoadLevel', 'simPause', 'simPlotArrows', 'simPlotLineList', 'simPlotLineStrip', 'simPlotPoints', 'simPlotStrings', 'simPlotTransforms', 'simPlotTransformsWithNames', 'simPrintLogMessage', 'simRunConsoleCommand', 'simSetCameraFov', 'simSetCameraPose', 'simSetDetectionFilterRadius', 'simSetDistortionParam', 'simSetDistortionParams', 'simSetFilmbackSettings', 'simSetFocalLength', 'simSetFocusAperture', 'simSetFocusDistance', 'simSetKinematics', 'simSetLightIntensity', 'simSetObjectMaterial', 'simSetObjectMaterialFromTexture', 'simSetObjectPose', 'simSetObjectScale', 'simSetPresetFilmbackSettings', 'simSetPresetLensSettings', 'simSetSegmentationObjectID', 'simSetTimeOfDay', 'simSetTraceLine', 'simSetVehiclePose', 'simSetWeatherParameter', 'simSetWind', 'simSpawnObject', 'simSwapTextures', 'simTestLineOfSightBetweenPoints', 'simTestLineOfSightToPoint', 'startRecording', 'stopRecording'
 
