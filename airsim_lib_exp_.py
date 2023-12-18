@@ -210,24 +210,6 @@ def euler_from_quaternion(q):
     yaw = math.atan2(2 * (q.w_val * q.z_val + q.x_val * q.y_val), (q.x_val * q.x_val + q.y_val * q.y_val))
     
     return roll, pitch, yaw
-
-def quaternion_to_euler_angle_vectorized(w, x, y, z):
-    ysqr = y * y
-
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + ysqr)
-    X = np.degrees(np.arctan2(t0, t1))
-
-    t2 = +2.0 * (w * y - z * x)
-
-    t2 = np.clip(t2, a_min=-1.0, a_max=1.0)
-    Y = np.degrees(np.arcsin(t2))
-
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (ysqr + z * z)
-    Z = np.degrees(np.arctan2(t3, t4))
-
-    return X, Y, Z
     
 
 def fly_on_path(tracker_arg, dict_, all_data, name_drone):
@@ -241,90 +223,6 @@ def fly_on_path(tracker_arg, dict_, all_data, name_drone):
     result = client.moveOnPathAsync(all_data, 12, 12, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1, vehicle_name=name_drone).join()
     print("flying on path coord position...", name_drone) 
 
-
-########################
-# Генетический алгоритм для создания pid
-########################
-
-## Функция для симуляции квадрокоптера с заданными параметрами PID
-#def simulate_pid(params):
-#    # Инициализация AirSim
-#    client = airsim.MultirotorClient()
-
-#    client.confirmConnection()
-
-#    # Задание параметров PID
-#    kp, ki, kd = params
-
-#    # Задание других параметров симуляции
-#    max_time = 10  # Продолжительность симуляции в секундах
-#    dt = 0.1  # Шаг времени в секундах
-
-#    # Начальные условия
-#    initial_pose = airsim.Pose(airsim.Vector3r(0, 0, -10), airsim.to_quaternion(0, 0, 0))
-#    client.simSetVehiclePose(initial_pose, True)
-
-#    # Симуляция
-#    for _ in range(int(max_time / dt)):
-#        # Получение текущей позиции
-#        pose = client.simGetVehiclePose()
-#        position = pose.position
-#        print (position)
-#        # Рассчет управляющего воздействия с использованием PID
-#        control_input = kp * position.x_val + ki * position.y_val + kd * position.z_val
-
-#        # Применение управляющего воздействия
-##        client.moveByVelocityZ(control_input, 0, 0, dt)
-#        client.moveByRC(rcdata = airsim.RCData(pitch = 0.0,
-#                                               throttle = control_input,
-#                                               yaw=0.0,
-#                                               roll=0.0,
-#                                               is_initialized = True,
-#                                               is_valid = True))        
-
-#    # Получение финальной позиции
-#    final_pose = client.simGetVehiclePose()
-#    final_position = final_pose.position
-
-#    # Закрытие соединения
-#    client.reset()
-#    client.enableApiControl(False)
-
-#    # Возвращение значения функции приспособленности (цель - минимизация расстояния до целевой точки)
-#    return np.sqrt(final_position.x_val**2 + final_position.y_val**2 + final_position.z_val**2),
-
-## Создание класса FitnessMin для минимизации функции приспособленности
-#creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-
-## Создание класса Individual с одним атрибутом, представляющим параметры PID
-#creator.create("Individual", list, fitness=creator.FitnessMin)
-
-## Определение функции для инициализации особи
-#def init_individual():
-#    return [np.random.uniform(0, 1) for _ in range(3)]  # Инициализация случайных значений для параметров PID
-
-## Определение генетических операторов
-#toolbox = base.Toolbox()
-#toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
-#toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-#toolbox.register("evaluate", simulate_pid)
-#toolbox.register("mate", tools.cxBlend, alpha=0.5)
-#toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.2, indpb=0.2)
-#toolbox.register("select", tools.selTournament, tournsize=3)
-
-## Создание начальной популяции
-#population = toolbox.population(n=10)
-
-## Запуск генетического алгоритма
-#algorithms.eaMuPlusLambda(population, toolbox, mu=10, lambda_=20, cxpb=0.7, mutpb=0.3, ngen=10, stats=None, halloffame=None)
-
-## Вывод лучшей особи
-#best_individual = tools.selBest(population, k=1)[0]
-#print("Best Individual:", best_individual)
-#print("Best Fitness:", best_individual.fitness.values)
-
-######
-######
 
 def calc_angle(drone_yaw, object_yaw):
     angle = object_yaw - drone_yaw
@@ -357,7 +255,7 @@ def yaw_control(pid, target_pos, object_pos):
     
     # Вычисляем ошибку угла поворота (yaw)
     yaw_error = math.atan2(diff_pos.y_val, diff_pos.x_val)
-    print ("YAW ERROR", yaw_error)
+
     # Применяем ПИД-регулятор к ошибке угла поворота
     yaw_output = pid.update(yaw_error)
     
@@ -367,10 +265,6 @@ def yaw_control(pid, target_pos, object_pos):
 
 def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
 
-    # быстрый взлёт
-    Kp = 0.745136137394194487*10
-    Ki = 0.00022393195314520642*10
-    Kd = 7.404490165264038*100
 
     # Создание подключения к AirSim
     client = airsim.MultirotorClient()#ip="192.168.1.100", port=41451
@@ -378,23 +272,35 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
     # Подключение к симулятору AirSim
     client.confirmConnection()
 
+    # быстрый взлёт
+    Kp = 0.745136137394194487*10
+    Ki = 0.00022393195314520642*10
+    Kd = 7.404490165264038*100
     # Create a PID controller object throttle
-#    pid_x = PIDController(Kp, Ki, Kd) 
-#    pid_y = PIDController(Kp, Ki, Kd)
     pid_z = PIDController(Kp, Ki, Kd) # throttle
     
-    # медленный взлёт
-    Kp = 0.000645136137394194487
-    Ki = 0.0000012393195314520642 
-    Kd = 0.404490165264038  
-    pid_x = PIDController(Kp, Ki, Kd)
+    # медленный roll
+    Kp = 0.15136137394194487
+    Ki = 0.000022393195314520642 
+    Kd = 8.404490165264038
     pid_y = PIDController(Kp, Ki, Kd) 
-    # Initialize PID controller for x and y axes
-    pid_pitch = PIDController(Kp, Ki, Kd)
-    pid_roll = PIDController(Kp, Ki, Kd)
 
+#    # yaw
+    Kp = 0.045136137394194487
+    Ki = 0.00022393195314520642 
+    Kd = 0.404490165264038
     pid_yaw = TestPid(Kp, Ki, Kd)
 #    pid_yaw = PIDController(Kp, Ki, Kd)
+    
+    # pitch
+#    Kp = 0.0045136137394194487
+#    Ki = 0.0012393195314520642 
+#    Kd = 6.404490165264038
+    Kp = 0.45136137394194487
+    Ki = 0.0012393195314520642 
+    Kd = 10.404490165264038
+    pid_x = PIDController(Kp, Ki, Kd)
+
     
     ix = 0
     # Основной цикл движения
@@ -414,7 +320,11 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
         # Координаты объекта, за которым нужно двигаться
         target_rotation = target_kinematics.orientation
         target_position = target_kinematics.position
-                                                            
+
+        ####################################
+        ### Вращение !!!
+        ####################################                  
+                                                   
         roll_t, pitch_t, yaw_t = euler_from_quaternion(target_rotation)   
         roll_q, pitch_q, yaw_q = euler_from_quaternion(quad_rotation)        
         
@@ -435,16 +345,6 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
 #        
 #        quad_linear_velocity = quad_kinematics.linear_velocity
 #        quad_linear_acceleration = quad_kinematics.linear_acceleration
-        
-        
-        
-        ####################################
-        ### Вращение !!!
-        ####################################
-        #current_value, target_value
-        control_signal_pitch = pid_pitch.update(pitch_q, pitch_t)  # pitch 
-        control_signal_roll = pid_roll.update(roll_q, roll_t) # roll  
-#        control_signal_yaw = pid_yaw.update(yaw_q, yaw_t) # yaw  
         
         
         ####################################
@@ -504,7 +404,8 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
                                                                             roll=control_signal_y, # рысканье
                                                                             is_initialized = True,
                                                                             is_valid = True))
-            time.sleep(0.0001) 
+#            time.sleep(0.0001) 
+            time.sleep(0.004)
         # Влияет время задержки и сигналы
         ix += 1
 
