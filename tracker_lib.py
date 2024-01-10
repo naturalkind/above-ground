@@ -10,13 +10,19 @@ class TrackerLib(object):
 ##        self.cap = cv2.VideoCapture(0)
 ##        # ROI in video
 ##        cv2.namedWindow('win')#, cv2.WINDOW_NORMAL)
+
+        # Флаг для отслеживания режима рисования прямоугольника
+        self.drawing = False
+        # Координаты начала и конца прямоугольника
+        self.start_x, self.start_y = -1, -1
+        self.end_x, self.end_y = -1, -1
         # Our ROI, defined by two points
         self.p1, self.p2 = None, None
         self.state = 0
         self.init_switch = False
         self.calibration_state = 0
         self.focalLength = 0       
-##        self.tracker = cv2.TrackerCSRT_create()
+##        csrt_tracker = cv2.TrackerCSRT_create()
 ##        # Register the mouse callback
 ##        cv2.setMouseCallback('win', self.on_mouse)
         
@@ -36,12 +42,8 @@ class TrackerLib(object):
      
         return cv2.minAreaRect(c)
  
-    # Функция расчета расстояния 
-    def distance_to_camera(self, knownWidth, focalLength, perWidth):  
-        # compute and return the distance from the maker to the camera
-        return (knownWidth * focalLength) / perWidth            
 
-    # focal length finder function
+    # Функция расчета расстояния 
     def focal_length(self, measured_distance, real_width, width_in_rf_image):
         """
         This Function Calculate the Focal Length(distance between lens to CMOS sensor), it is simple constant we can find by using
@@ -79,6 +81,35 @@ class TrackerLib(object):
             self.p1, self.p2 = None, None
             self.state = 0
 
+    # Функция для рисования прямоугольника-обработчик событий мыши
+    def draw_rectangle(self, event, x, y, flags, userdata):
+#        global drawing, start_x, start_y, end_x, end_y
+        
+        # Если происходит нажатие левой кнопки мыши
+        if event == cv2.EVENT_LBUTTONDOWN:
+            self.drawing = True
+            self.start_x, self.start_y = x, y
+            self.end_x, self.end_y = x, y
+            self.p1 = (x,y)
+            self.state += 1
+        # Если происходит движение мыши с нажатой кнопкой
+        elif event == cv2.EVENT_MOUSEMOVE:
+            if self.drawing:
+                self.end_x, self.end_y = x, y
+        
+        # Если кнопка мыши отпущена
+        elif event == cv2.EVENT_LBUTTONUP:
+            self.drawing = False
+            self.end_x, self.end_y = x, y
+            self.p2 = (x,y)
+            self.state += 1
+            
+        # Right click (erase current ROI)
+        if event == cv2.EVENT_RBUTTONUP:
+            self.p1, self.p2 = None, None
+            self.state = 0
+            self.start_x, self.start_y = -1, -1
+            self.end_x, self.end_y = -1, -1
 
 
     def get_center(self, img, x, y, w, h):
@@ -87,10 +118,12 @@ class TrackerLib(object):
         cv2.circle(img, (xcentr, ycentr), radius=0, color=(0, 0, 255), thickness=5)
         return (xcentr, ycentr)    
 
+
     def draw_box(self, img, bbox):
         x, y, w, h = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
         cv2.rectangle(img, (x, y), ((x+w), (y+h)), (255, 0, 255), 3, 1)
         return self.get_center(img, x, y, w, h)
+
 
     def increase_brightness(self, img, value=10):
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -104,16 +137,18 @@ class TrackerLib(object):
 
 
     def start_stream(self):
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(1)
         # ROI in video
         cv2.namedWindow('win')#, cv2.WINDOW_NORMAL)   
-        self.tracker = cv2.TrackerCSRT_create()
+        csrt_tracker = cv2.TrackerCSRT_create()
+        kcf_tracker = cv2.TrackerKCF_create()
+        
         # Register the mouse callback
-        cv2.setMouseCallback('win', self.on_mouse)
+        cv2.setMouseCallback('win', self.draw_rectangle)
         while self.cap.isOpened():
             # FPS варианты
             start_time = time.time()
-            timer = cv2.getTickCount()
+#            timer = cv2.getTickCount()
             success, img = self.cap.read()
             img = self.increase_brightness(img)
             #img = cv2.flip(img, 1)
@@ -122,19 +157,33 @@ class TrackerLib(object):
             if self.state > 1:
                 cv2.rectangle(img, self.p1, self.p2, (255, 0, 0), 10)  
                 bbox = (self.p1[0], self.p1[1], self.p2[0]-self.p1[0], self.p2[1]-self.p1[1])
-                self.tracker.init(img, bbox) 
+                csrt_tracker.init(img, bbox) 
+                kcf_tracker.init(img, bbox) 
+                
                 self.init_switch = True
                 self.state = 0
                 
             if self.init_switch:
-                success, bbox = self.tracker.update(img)
-                print (".........",self.init_switch)
-                if success:
+#                success, bbox = csrt_tracker.update(img)
+                
+                # Обновление трекера CSRT
+                csrt_success, csrt_bbox = csrt_tracker.update(img)
+                
+                # Обновление трекера KCF
+                kcf_success, kcf_bbox = kcf_tracker.update(img)
+                
+                # Взвешивание результатов трекинга
+                if csrt_success and kcf_success:                
+                    bbox = (0.6 * csrt_bbox[0] + 0.4 * kcf_bbox[0],
+                             0.6 * csrt_bbox[1] + 0.4 * kcf_bbox[1],
+                             0.6 * csrt_bbox[2] + 0.4 * kcf_bbox[2],
+                             0.6 * csrt_bbox[3] + 0.4 * kcf_bbox[3])
+                    bbox = [int(x) for x in bbox]
                     obj_center = self.draw_box(img, bbox)
-                    cv2.line(img, img_center, obj_center, (255,0,0), 4)   
                     x_dist = (obj_center[0] - img_center[0])**2
                     y_dist = (obj_center[1] - img_center[1])**2 
-                    #cv2.putText(img, "{}".format(int(np.sqrt(x_dist + y_dist))), (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                    cv2.line(img, img_center, obj_center, (255,0,0), 4) 
+                    cv2.putText(img, "{}".format(int(np.sqrt(x_dist + y_dist))), (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
                  
                     #img_center
                     w_sector, h_sector = img.shape[1]//2, img.shape[0]//2
@@ -146,18 +195,7 @@ class TrackerLib(object):
                     M1 = int(np.sqrt(img.shape[1]**2 + img.shape[0]**2))
                     g1_point = int(np.sqrt(bbox[0]**2 + bbox[1]**2))
                     p_dist_point = (g1_point/M1) * 100
-                    #cv2.line(img, (0,0), (bbox[0], bbox[1]), (255,0,0), 4)  
-                    cv2.line(img, (0,0), (bbox[0], bbox[1]), (255,0,0), 4)
-                    cv2.putText(img, f"{int(p_dist_point)}%", (bbox[0]//2,bbox[1]//2+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
                     
-                    # площадь в процентах
-                    S0=img.shape[1]*bbox[0]
-                    S1=bbox[2]*bbox[3]
-                    P_s = (S1/S0)*100
-                    
-                    #(bbox[0]+bbox[2]), (bbox[1]+bbox[3])
-                     
-                    cv2.line(img, (bbox[0]+bbox[2], bbox[1]+bbox[3]), (img.shape[1], img.shape[0]), (255,0,0), 4) 
                     
                     x_, y_ = bbox[0]+bbox[2], bbox[1]+bbox[3]
                     x_, y_ = img.shape[1]-x_, img.shape[0]-y_
@@ -169,29 +207,73 @@ class TrackerLib(object):
                     A = (bbox[0]+bbox[2])+x_//2 
                     B = (bbox[1]+bbox[3])+y_//2 
                     
-                    #A = x_#//2 
-                    #B = y_#//2 
+                    distance = (p_dist+p_dist_point+p_dist_point2)/3
+                                        
+                elif csrt_success:
+                    bbox = csrt_bbox 
+                    obj_center = self.draw_box(img, bbox)
+                    x_dist = (obj_center[0] - img_center[0])**2
+                    y_dist = (obj_center[1] - img_center[1])**2 
                     
-                    cv2.putText(img, f"{int(p_dist_point2)}%", (A, B),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                    cv2.line(img, img_center, obj_center, (255,0,0), 4) 
+                    cv2.putText(img, "{}".format(int(np.sqrt(x_dist + y_dist))), (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                 
+                    #img_center
+                    w_sector, h_sector = img.shape[1]//2, img.shape[0]//2
+                    M = int(np.sqrt(w_sector**2 + h_sector**2))
+                    g = int(np.sqrt(x_dist + y_dist))
+                    p_dist = (g/M) * 100
                     
+                    
+                    M1 = int(np.sqrt(img.shape[1]**2 + img.shape[0]**2))
+                    g1_point = int(np.sqrt(bbox[0]**2 + bbox[1]**2))
+                    p_dist_point = (g1_point/M1) * 100
+                    
+                    
+                    x_, y_ = bbox[0]+bbox[2], bbox[1]+bbox[3]
+                    x_, y_ = img.shape[1]-x_, img.shape[0]-y_
+                    
+                    
+                    g2_point = int(np.sqrt(x_**2 + y_**2))
+                    p_dist_point2 = (g2_point/M1) * 100  
+                    
+                    A = (bbox[0]+bbox[2])+x_//2 
+                    B = (bbox[1]+bbox[3])+y_//2 
                     
                     distance = (p_dist+p_dist_point+p_dist_point2)/3
+                elif kcf_success:     
+                    bbox = kcf_bbox 
+                    obj_center = self.draw_box(img, bbox)
+                    x_dist = (obj_center[0] - img_center[0])**2
+                    y_dist = (obj_center[1] - img_center[1])**2 
                     
-                    #apx_distance = round(((1 - (boxes[0][i][3] - boxes[0][i][1]))**4),1)
-                    cv2.putText(img, f"distance: {int(p_dist)}%, sum dis: {int(distance)}%", (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                    cv2.line(img, img_center, obj_center, (255,0,0), 4) 
+                    cv2.putText(img, "{}".format(int(np.sqrt(x_dist + y_dist))), (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                 
+                    #img_center
+                    w_sector, h_sector = img.shape[1]//2, img.shape[0]//2
+                    M = int(np.sqrt(w_sector**2 + h_sector**2))
+                    g = int(np.sqrt(x_dist + y_dist))
+                    p_dist = (g/M) * 100
                     
                     
-                    #print (int(distance), A, B, x_, y_)
+                    M1 = int(np.sqrt(img.shape[1]**2 + img.shape[0]**2))
+                    g1_point = int(np.sqrt(bbox[0]**2 + bbox[1]**2))
+                    p_dist_point = (g1_point/M1) * 100
                     
-                    """
-                    cv2.putText(img, 
-                                f"distance: {int(distance)} cm",
-                                (img.shape[1] - 400, img.shape[0] - 10), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 
-                                0.7, 
-                                (0, 255, 0), 
-                                2)
-                   """ 
+                    
+                    x_, y_ = bbox[0]+bbox[2], bbox[1]+bbox[3]
+                    x_, y_ = img.shape[1]-x_, img.shape[0]-y_
+                    
+                    
+                    g2_point = int(np.sqrt(x_**2 + y_**2))
+                    p_dist_point2 = (g2_point/M1) * 100  
+                    
+                    A = (bbox[0]+bbox[2])+x_//2 
+                    B = (bbox[1]+bbox[3])+y_//2 
+                    
+                    distance = (p_dist+p_dist_point+p_dist_point2)/3
+
                     
             # FPS варианты
             #fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)
@@ -201,11 +283,19 @@ class TrackerLib(object):
             
             cv2.putText(img, f"{int(fps)} fps", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,0,255),2) #cv2.FONT_HERSHEY_COMPLEX
             
+            # Если начальные и конечные координаты прямоугольника определены
+            if self.start_x != -1 and self.end_x != -1:
+                if self.state != 0:
+                    # Рисование прямоугольника на изображении
+                    cv2.rectangle(img, (self.start_x, self.start_y), (self.end_x, self.end_y), (0, 255, 0), 2)
             cv2.imshow("win", img)
             
 
             if cv2.waitKey(1) & 0xff == ord('q'):
-                break      
+                break    
+        video.release()
+        cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     print ("START")
