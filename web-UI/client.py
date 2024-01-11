@@ -5,6 +5,7 @@ import struct
 import tracker_lib
 
 lib_start = tracker_lib.TrackerLib()
+lib_start.create_win()
 # Создание сокета
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_ip = '192.168.1.123'  # Адрес сервера
@@ -42,7 +43,9 @@ while True:
         if lib_start.state != 0:
             # Рисование прямоугольника на изображении
             cv2.rectangle(img, (lib_start.start_x, lib_start.start_y), (lib_start.end_x, lib_start.end_y), (0, 255, 0), 2)
-    
+            
+    fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)    
+    cv2.putText(img, f"{int(fps)} fps", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,0,255),2)
     # визуализация
     cv2.imshow("win", img)
     if cv2.waitKey(1) & 0xff == ord('q'):
@@ -57,13 +60,9 @@ while True:
     message = struct.pack("Q", len(a)) + a
     client_socket.sendall(message)
         
-        
-    fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)    
-    #print (img.shape, fps) 
-     
-cap.release()
-cv2.destroyAllWindows()
 
+     
+cv2.destroyAllWindows()
 client_socket.close()
 
 

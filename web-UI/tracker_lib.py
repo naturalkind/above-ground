@@ -24,13 +24,12 @@ class TrackerLib(object):
         self.focalLength = 0       
 ##        csrt_tracker = cv2.TrackerCSRT_create()
 ##        # Register the mouse callback
+##        cv2.namedWindow('win')#, cv2.WINDOW_NORMAL)  
 ##        cv2.setMouseCallback('win', self.on_mouse)
-        cv2.namedWindow('win')#, cv2.WINDOW_NORMAL)   
+
         self.csrt_tracker = cv2.TrackerCSRT_create()
         self.kcf_tracker = cv2.TrackerKCF_create()
         
-        # Register the mouse callback
-        cv2.setMouseCallback('win', self.draw_rectangle)     
 
     # Найти целевую функцию
     def find_marker(self, image):
@@ -146,6 +145,10 @@ class TrackerLib(object):
         self.kcf_tracker.init(img, bbox) 
         self.init_switch = True
     
+    def create_win(self):
+        # Register the mouse callback
+        cv2.namedWindow('win')#, cv2.WINDOW_NORMAL)  
+        cv2.setMouseCallback('win', self.draw_rectangle)   
         
     def process_img_server(self, img):
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
@@ -426,6 +429,7 @@ class TrackerLib(object):
 if __name__ == "__main__":
     print ("START")
     lib_start = TrackerLib()
+    lib_start.create_win()
     #print (dir(lib_start))
     lib_start.start_stream()
     

@@ -8,7 +8,8 @@ lib_start = tracker_lib.TrackerLib()
 # Создание сокета
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_name = socket.gethostname()
-host_ip = '192.168.1.123'#socket.gethostbyname(host_name)
+#host_ip = #'10.42.0.1'
+host_ip ='192.168.1.123'#socket.gethostbyname(host_name)
 print('Хост IP:', host_ip)
 port = 9999
 socket_address = (host_ip, port)
@@ -53,6 +54,7 @@ while True:
             data = data[msg_size:]
             bbox, state, init_switch = pickle.loads(frame_data)  
             
+            print (state, init_switch, init_tracker)
             if state > 1 and init_switch is True:
                 if init_tracker == False:
                     lib_start.init_tracker(_img, bbox)
@@ -65,13 +67,11 @@ while True:
                 message = struct.pack("Q", len(a)) + a
                 client_socket.sendall(message)
             # визуализация
-            cv2.imshow("win", img)
-            if cv2.waitKey(1) & 0xff == ord('q'):
-                client_socket.close()
-                break 
+#            cv2.imshow("win", img)
+#            if cv2.waitKey(1) & 0xff == ord('q'):
+#                client_socket.close()
+#                break 
                 
                 
         cap.release()
         cv2.destroyAllWindows()
-
-
