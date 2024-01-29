@@ -287,8 +287,8 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
 
 #    # yaw
     Kp = 0.045136137394194487
-    Ki = 0.00022393195314520642 
-    Kd = 0.404490165264038
+    Ki = 0.000022393195314520642 
+    Kd = 1.404490165264038
     pid_yaw = TestPid(Kp, Ki, Kd)
 #    pid_yaw = PIDController(Kp, Ki, Kd)
     
@@ -296,9 +296,9 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
 #    Kp = 0.0045136137394194487
 #    Ki = 0.0012393195314520642 
 #    Kd = 6.404490165264038
-    Kp = 0.45136137394194487
-    Ki = 0.0012393195314520642 
-    Kd = 10.404490165264038
+    Kp = 0.75136137394194487
+    Ki = 0.000412393195314520642 
+    Kd = 100.404490165264038
     pid_x = PIDController(Kp, Ki, Kd)
 
     
@@ -307,8 +307,8 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
     while True:
 
         # Целоевой дрон
-        target_kinematics = client.simGetVehiclePose(vehicle_name=name_drone_target)
-#        target_kinematics = client.simGetObjectPose(name_drone_target)
+#        target_kinematics = client.simGetVehiclePose(vehicle_name=name_drone_target)
+        target_kinematics = client.simGetObjectPose(name_drone_target)
 #        target_kinematics = client.getMultirotorState(vehicle_name=name_drone_target).kinematics_estimated
         
         # Основной дрон
@@ -351,8 +351,8 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
         ### Расположение !!!
         ####################################
 
-        control_signal_x = pid_x.update(quad_position.x_val, target_position.x_val) # yaw 
-        control_signal_y = pid_y.update(quad_position.y_val, target_position.y_val) # roll
+#        control_signal_x = pid_x.update(quad_position.x_val, target_position.x_val) # yaw 
+#        control_signal_y = pid_y.update(quad_position.y_val, target_position.y_val) # roll
         control_signal_z = pid_z.update(quad_position.z_val, target_position.z_val+(-1.0))
 #        control_signal_x = f_kalman_x.update(target_position.x_val, quadrocopter_position.x_val) # yaw
 #        control_signal_y = f_kalman_y.update(target_position.y_val, quadrocopter_position.y_val) # roll
@@ -378,7 +378,7 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
         # Вычисляем угол между ориентацией дрона и целевым объектом
         angle1 = calculate_angle(quad_position, target_position)
                
-        control_signal_yaw = yaw_control(pid_yaw, target_position, quad_position) 
+#        control_signal_yaw = yaw_control(pid_yaw, target_position, quad_position) 
 #        control_signal_yaw = pid_yaw.update(angle1) # yaw 
        
         #t_test = client.simGetFocusDistance("BP_PIPCamera_C_510", vehicle_name=name_drone)
@@ -386,26 +386,34 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
         #t_test = client.simGetObjectPose(name_drone).position
         
         
-#        print (f"X ---> Основной {quad_position.x_val} Цель {target_position.x_val} Ошибка {error_x}")
+        print (f"X ---> Основной {quad_position.x_val} Цель {target_position.x_val} Ошибка {error_x}")
 #        print (f"Y ---> Основной {quad_position.y_val} Цель {target_position.y_val} Ошибка {error_y}")
 #        print (f"Z ---> Основной {quad_position.z_val} Цель {target_position.z_val} Ошибка {error_z}")
         print (":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::", ix)
-        print ("roll", roll_q, roll_t, "ERROR", error_roll)
-        print ("pitch", pitch_q, pitch_t, "ERROR", error_pitch)
-        print ("yaw", yaw_q, yaw_t, "ERROR", error_yaw)
+#        print ("roll", roll_q, roll_t, "ERROR", error_roll)
+#        print ("pitch", pitch_q, pitch_t, "ERROR", error_pitch)
+#        print ("yaw", yaw_q, yaw_t, "ERROR", error_yaw)
 #        print ((error_yaw+error_roll+error_pitch)/3)
 
         ####################################
         
-        if ix > 600:
+        if ix > 100:
+            control_signal_x = pid_x.update(quad_position.x_val, target_position.x_val-1) # yaw target_position.x_val
+            control_signal_y = pid_y.update(quad_position.y_val, target_position.y_val) # roll
+            control_signal_yaw = yaw_control(pid_yaw, target_position, quad_position) # yaw 
             client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(pitch = control_signal_x, # наклон
                                                                             throttle = -control_signal_z, # тяга
                                                                             yaw=control_signal_yaw, # поворот на месте
-                                                                            roll=control_signal_y, # рысканье
+                                                                            #roll=control_signal_y, # рысканье
                                                                             is_initialized = True,
                                                                             is_valid = True))
-#            time.sleep(0.0001) 
-            time.sleep(0.004)
+            time.sleep(0.006)
+        else:
+            client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(throttle = -control_signal_z, # тяга
+                                                                            is_initialized = True,
+                                                                            is_valid = True))            
+            time.sleep(0.004) 
+            
         # Влияет время задержки и сигналы
         ix += 1
 
@@ -437,5 +445,240 @@ if __name__ == "__main__":
 Настроить генетический алгоритм
 для движения за дроном вперёд
 
+
+import airsim
+import math
+
+# Коэффициенты PID-регулятора
+kp = 1.0
+ki = 0.0
+kd = 0.0
+
+# Параметры для работы PID-регулятора
+prev_error = 0
+integral = 0
+
+# Конфигурация для соединения с AirSim
+config = airsim.MultirotorClient.MultirotorClientConfig()
+config.synchronous_mode = True
+
+# Создание подключения к AirSim
+client = airsim.MultirotorClient.MultirotorClient(config=config)
+
+# Подключение к симулятору AirSim
+client.confirmConnection()
+
+# Выравнивание перед движением
+client.enableApiControl(True)
+client.armDisarm(True)
+client.takeoffAsync().join()
+
+# Координаты объекта, за которым нужно двигаться
+target_object = "TargetObject"
+target_position = client.simGetObjectPose(target_object).position
+
+# Основной цикл движения
+while True:
+    # Получение текущего положения quadrocopter'а
+    quadrocopter_position = client.simGetVehiclePose().position
+
+    # Расчет ошибки по x и y
+    error_x = target_position.x_val - quadrocopter_position.x_val
+    error_y = target_position.y_val - quadrocopter_position.y_val
+
+    # Расчет P-компонента
+    p_term_x = kp * error_x
+    p_term_y = kp * error_y
+
+    # Расчет I-компонента
+    integral += error_x + error_y
+    i_term_x = ki * integral
+    i_term_y = ki * integral
+
+    # Расчет D-компонента
+    d_term_x = kd * (error_x - prev_error)
+    d_term_y = kd * (error_y - prev_error)
+
+    # Вычисление выходного значения
+    output_x = p_term_x + i_term_x + d_term_x
+    output_y = p_term_y + i_term_y + d_term_y
+
+    # Ограничение выходного значения
+    output_x = max(min(output_x, 1), -1)
+    output_y = max(min(output_y, 1), -1)
+
+    # Применение выходного значения на quadrocopter
+    client.moveByRC(rcdata=airsim.RCData(roll=output_y, pitch=-output_x))
+
+    # Обновление значения предыдущей ошибки
+    prev_error = error_x
+
+    # Проверка условия остановки движения
+    if math.sqrt(error_x ** 2 + error_y ** 2) < 0.1:
+        break
+
+# Остановка движения и выключение quadrocopter'а
+client.moveByRC(rcdata=airsim.RCData())
+client.armDisarm(False)
+client.enableApiControl(False)
+
+
+import airsim
+import time
+
+class PidController:
+    def __init__(self, kp, ki, kd):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.last_error = 0
+        self.error_integral = 0
+
+    def calculate_control_signal(self, error):
+        control_signal = self.kp * error + self.ki * self.error_integral + self.kd * (error - self.last_error)
+        self.error_integral += error
+        self.last_error = error
+        return control_signal
+
+def flight_control():
+    # Подключение к AirSim
+    client = airsim.MultirotorClient()
+    client.confirmConnection()
+
+    # Запуск симуляции
+    client.enableApiControl(True)
+    client.armDisarm(True)
+
+    # Создание PID-регуляторов
+    pitch_pid = PidController(0.5, 0, 0)
+    throttle_pid = PidController(0.4, 0.01, 0)
+    yaw_pid = PidController(0.2, 0, 0)
+    roll_pid = PidController(0.5, 0, 0)
+
+    # Целевая высота полета
+    target_altitude = -10
+
+    while True:
+        # Получение текущей позиции и высоты
+        position = client.getPosition()
+        altitude = -position.z_val
+
+        # Вычисление ошибки высоты
+        altitude_error = target_altitude - altitude
+
+        # Вычисление управляющих сигналов с использованием PID-регуляторов
+        pitch_control_signal = pitch_pid.calculate_control_signal(altitude_error)
+        throttle_control_signal = throttle_pid.calculate_control_signal(altitude_error)
+        yaw_control_signal = yaw_pid.calculate_control_signal(0)  # Контроль направления на текущем уровне
+        roll_control_signal = roll_pid.calculate_control_signal(0)  # Контроль наклона на текущем уровне
+
+        # Отправка управляющих сигналов
+        client.moveByRC(pitch_control_signal, throttle_control_signal, yaw_control_signal, roll_control_signal)
+
+        # Добавить задержку для обновления позиции
+        time.sleep(0.1)
+
+if __name__ == "__main__":
+    flight_control()
+
+
+Алгоритм работы при выполнении функции самонаведения и слежения в квадрокоптерах может быть следующим:
+
+Получение желаемой позиции или траектории наведения или слежения (например, с помощью видеоаналитики или других сенсоров).
+Получение текущей позиции и ориентации квадрокоптера (например, с помощью GPS, инерциальных измерений, комплиментарного фильтра и т. д.).
+Вычисление ошибки позиции и ориентации путем вычитания текущих значений из желаемых значений.
+Применение контроллера для вычисления управляющих сигналов для моторов квадрокоптера.
+Применение этих управляющих сигналов к моторам, чтобы изменить тягу каждого мотора и, таким образом, изменить позицию и ориентацию квадрокоптера.
+Повторение шагов 2-5 для обновления позиции и ориентации до достижения желаемой точности или при необходимости.
+Пример псевдокода на языке Python:
+
+scss
+Copy code
+def self_stabilization(target_position, target_orientation):
+    while True:
+        current_position = get_current_position()
+        current_orientation = get_current_orientation()
+        
+        position_error = target_position - current_position
+        orientation_error = target_orientation - current_orientation
+
+        control_signal = calculate_control_signal(position_error, orientation_error)
+        apply_control_signal(control_signal)
+В этом примере функция self_stabilization принимает желаемую позицию и ориентацию в качестве входных данных и выполняет цикл, который вычисляет ошибку позиции и ориентации, затем применяет контроллер и применяет управляющий сигнал к моторам квадрокоптера.
+
+Вызовы функций get_current_position() и get_current_orientation() должны быть заменены на соответствующий код для получения текущей позиции и ориентации. Аналогично, функции calculate_control_signal() и apply_control_signal() должны быть заменены на соответствующий код для вычисления управляющего сигнала и его применения к моторам квадрокоптера.
+
+
+
+
+def calculate_control_signal(position_error, orientation_error):
+    # Коэффициенты PID регулятора
+    Kp_position = 0.5
+    Ki_position = 0.1
+    Kd_position = 0.2
+
+    Kp_orientation = 0.3
+    Ki_orientation = 0.05
+    Kd_orientation = 0.1
+
+    # Интегральная ошибка
+    integral_error_position = 0
+    integral_error_orientation = 0
+
+    # Прошлая ошибка
+    previous_error_position = 0
+    previous_error_orientation = 0
+
+    # Вычисление позиционного компонента управляющего сигнала
+    position_component = (
+        Kp_position * position_error +
+        Ki_position * integral_error_position +
+        Kd_position * (position_error - previous_error_position)
+    )
+
+    # Обновление интегральной ошибки для позиционного компонента
+    integral_error_position += position_error
+
+    # Обновление прошлой ошибки для позиционного компонента
+    previous_error_position = position_error
+
+    # Вычисление ориентационного компонента управляющего сигнала
+    orientation_component = (
+        Kp_orientation * orientation_error +
+        Ki_orientation * integral_error_orientation +
+        Kd_orientation * (orientation_error - previous_error_orientation)
+    )
+
+    # Обновление интегральной ошибки для ориентационного компонента
+    integral_error_orientation += orientation_error
+
+    # Обновление прошлой ошибки для ориентационного компонента
+    previous_error_orientation = orientation_error
+
+    # Вычисление итогового управляющего сигнала
+    pitch = position_component + orientation_component
+    throttle = position_component - orientation_component
+    roll = position_component + orientation_component
+
+    # Возвращаем управляющий сигнал movebyrcdata
+    return pitch, throttle, roll
+    
+Для управления PID-регулятором yaw (поворотом вокруг вертикальной оси) при использовании функции moveByRC в AirSim, следует использовать следующие параметры:
+
+Roll: Задает угол крена дрона. Диапазон значений: от -1 до 1.
+Pitch: Задает угол тангажа дрона. Диапазон значений: от -1 до 1.
+Yaw: Задает угол поворота дрона вокруг вертикальной оси. Диапазон значений: от -1 до 1.
+Throttle: Задает уровень газа/тяги дрона. Диапазон значений: от 0 до 1.
+Эти параметры позволяют управлять дроном во всех трех осях (вперед/назад, влево/вправо, вверх/вниз) и осуществлять повороты вокруг вертикальной оси.    
+    
+    
+    
+Для управления PID-регулятором yaw moveByRC в AirSim при задаче слежения за объектом необходимо использовать следующие данные:
+
+Координаты текущего положения дрона - это позволяет определить его текущую позицию в пространстве.
+Координаты положения целевого объекта - позволяют определить положение объекта, за которым необходимо следить.
+Данные об ошибке - вычисляются как разница между текущим положением дрона и положением целевого объекта. Эти данные позволяют оценить "отклонение" от желаемого положения.
+Угол между текущей ориентацией дрона и целевым объектом - помогает определить направление, в котором дрон должен повернуться для слежения за объектом.
+На основе этих данных PID-регулятор вычисляет управляющий сигнал, который в свою очередь используется для регулирования угла поворота дрона вокруг оси yaw. Этот угол yaw позволяет дрону выровняться с целевым объектом и поддерживать его слежение.    
 """
 
