@@ -15,9 +15,9 @@ lib_start = tracker_lib.TrackerLib()
 # Создание сокета
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_name = socket.gethostname()
-#host_ip = #'10.42.0.1'
+host_ip = '10.42.0.1'
 #host_ip ='192.168.1.123'#socket.gethostbyname(host_name)
-host_ip ='192.168.0.102'
+#host_ip ='192.168.0.102'
 print('Хост IP:', host_ip)
 port = 9999
 socket_address = (host_ip, port)
@@ -65,7 +65,7 @@ ixx = 0
 server_socket.bind(socket_address)
 
 # Ожидание подключения клиента
-server_socket.listen(5)
+#server_socket.listen(5)
 print("Ожидание подключения клиента...")
 cap = cv2.VideoCapture(1)
 

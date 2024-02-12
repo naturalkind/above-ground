@@ -8,12 +8,13 @@ lib_start = tracker_lib.TrackerLib()
 # Создание сокета
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_name = socket.gethostname()
-#host_ip = #'10.42.0.1'
-host_ip ='192.168.1.123'#socket.gethostbyname(host_name)
+host_ip = '10.42.0.1'
+#host_ip ='192.168.1.123'#socket.gethostbyname(host_name)
 print('Хост IP:', host_ip)
 port = 9999
 socket_address = (host_ip, port)
 
+encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 # Привязка сокета
 server_socket.bind(socket_address)
 
@@ -31,10 +32,11 @@ while True:
     if client_socket:
         while(cap.isOpened()):
             success, _img = cap.read()
-            
             if init_tracker == False:
+                # Сжатие кадра в формат JPEG
+                _, _img_send = cv2.imencode('.jpg', _img, encode_param)
                 # отправка данных
-                a = pickle.dumps([_img, init_tracker])
+                a = pickle.dumps([_img_send, init_tracker])
                 message = struct.pack("Q", len(a)) + a
                 client_socket.sendall(message)
             
@@ -63,6 +65,8 @@ while True:
             
             
             if init_tracker == True:
+                # Сжатие кадра в формат JPEG
+                _, img = cv2.imencode('.jpg', img[0], encode_param)
                 a = pickle.dumps([img, init_tracker])
                 message = struct.pack("Q", len(a)) + a
                 client_socket.sendall(message)
