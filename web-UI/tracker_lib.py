@@ -152,6 +152,7 @@ class TrackerLib(object):
         
     def process_img_server(self, img):
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
+        obj_center = [0,0]
         if self.init_switch:
             # Обновление трекера CSRT
             csrt_success, csrt_bbox = self.csrt_tracker.update(img)
@@ -260,7 +261,7 @@ class TrackerLib(object):
                 B = (bbox[1]+bbox[3])+y_//2 
                 
                 distance = (p_dist+p_dist_point+p_dist_point2)/3
-        return img
+        return img, obj_center, img_center
 
 
     def process_img_client(self, img):

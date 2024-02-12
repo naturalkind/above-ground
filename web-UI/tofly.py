@@ -323,6 +323,7 @@ def keyboard_controller(screen, dict_):
 def image_task(tracker_arg, dict_):
     print (tracker_arg, dict_)
     lib_start = tracker_lib.TrackerLib()
+    lib_start.create_win()
     lib_start.start_stream()
     
     

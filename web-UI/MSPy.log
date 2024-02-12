@@ -1,0 +1,12 @@
+[WARNING] [2024-01-12 11:43:02,418]: Error opening the serial port (/dev/ttyACM0): [Errno 2] could not open port /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'
+[WARNING] [2024-01-12 11:43:02,920]: Serial port (/dev/ttyACM0) not ready/available
+[WARNING] [2024-01-12 11:44:17,950]: Error opening the serial port (/dev/ttyACM0): [Errno 2] could not open port /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'
+[WARNING] [2024-01-12 11:44:18,452]: Serial port (/dev/ttyACM0) not ready/available
+[WARNING] [2024-01-12 11:44:59,197]: Error opening the serial port (/dev/ttyACM0): [Errno 2] could not open port /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'
+[WARNING] [2024-01-12 11:44:59,698]: Serial port (/dev/ttyACM0) not ready/available
+[WARNING] [2024-01-12 11:53:19,944]: Error opening the serial port (/dev/ttyACM0): [Errno 2] could not open port /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'
+[WARNING] [2024-01-12 11:53:20,445]: Serial port (/dev/ttyACM0) not ready/available
+[WARNING] [2024-01-12 13:12:41,504]: Error opening the serial port (/dev/ttyACM0): [Errno 2] could not open port /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'
+[WARNING] [2024-01-12 13:12:42,006]: Serial port (/dev/ttyACM0) not ready/available
+[WARNING] [2024-01-12 13:20:23,512]: Error opening the serial port (/dev/ttyACM0): [Errno 2] could not open port /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'
+[WARNING] [2024-01-12 13:20:24,013]: Serial port (/dev/ttyACM0) not ready/available
