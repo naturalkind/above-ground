@@ -25,15 +25,17 @@ class VideoStreamWidget(object):
         while True:
             if self.capture.isOpened():
                 (self.status, self.frame) = self.capture.read()
+                self.img, self.obj_center, self.img_center = lib_start.process_img_server(self.frame)   
             time.sleep(.01)
     def get_frame(self):
-        return self.frame
+        return self.img, self.obj_center, self.img_center
 
 lib_start = tracker_lib.TrackerLib()
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 
 # Создание сокета
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 host_name = socket.gethostname()
 #host_ip = '10.42.0.1'
 #host_ip = socket.gethostbyname(host_name)
@@ -155,14 +157,14 @@ try:
         while(video_stream_widget.capture.isOpened()):
             if client_socket:
                 try:
-                    _img = video_stream_widget.get_frame()
+                    # Сжатие кадра в формат JPEG
+                    _img, obj_center, img_center = video_stream_widget.get_frame()
+                    _, img = cv2.imencode('.jpg', _img, encode_param)
                 except AttributeError:
                     pass
                 if init_tracker == False:
-                    # Сжатие кадра в формат JPEG
-                    _, _img_send = cv2.imencode('.jpg', _img, encode_param)
                     # отправка данных
-                    a = pickle.dumps([_img_send, init_tracker])
+                    a = pickle.dumps([img, init_tracker])
                     message = struct.pack("Q", len(a)) + a
                     client_socket.sendall(message)
                 
@@ -187,11 +189,9 @@ try:
                     if init_tracker == False:
                         lib_start.init_tracker(_img, bbox)
                     init_tracker = True
-                img, obj_center, img_center = lib_start.process_img_server(_img)     
+                  
                 
                 if init_tracker == True:
-                    # Сжатие кадра в формат JPEG
-                    _, img = cv2.imencode('.jpg', img, encode_param)
                     a = pickle.dumps([img, init_tracker])
                     message = struct.pack("Q", len(a)) + a
                     client_socket.sendall(message)
@@ -206,13 +206,15 @@ try:
                 print (img_center[0], obj_center[0], ixx)
                 if start_fly:
                     if init_tracker:
-                        
-                        if CMDS['yaw'] >= 1100 or CMDS['yaw'] <= 1800:
-                            pid_output_roll = pid_roll.update(obj_center[0], img_center[0]) # yaw
-                            if  0 < CMDS['yaw'] + pid_output_roll < 1600:
-                                CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
-                                print (pid_output_roll, CMDS['yaw'])
-
+                        pid_output_roll = pid_roll.update(obj_center[0], img_center[0]) # yaw
+                        if 1000 <= CMDS['yaw']+ pid_output_roll <= 1680:
+                            print ("YAW", pid_output_roll, CMDS['yaw'], CMDS['yaw'] + pid_output_roll)
+                            CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
+                            
+                        pid_output_throttle = pid_throttle.update(obj_center[1], img_center[1])        
+                        if 1000 <= CMDS['throttle']+pid_output_throttle <= 1680:
+                            print ("THRO", pid_output_throttle, CMDS['throttle'], CMDS['throttle']+pid_output_throttle)
+                            CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
                 ixx += 1
                 time.sleep(0.0001)
                 
