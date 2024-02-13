@@ -15,9 +15,10 @@ lib_start = tracker_lib.TrackerLib()
 # Создание сокета
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_name = socket.gethostname()
-host_ip = '10.42.0.1'
-#host_ip ='192.168.1.123'#socket.gethostbyname(host_name)
-#host_ip ='192.168.0.102'
+#host_ip = '10.42.0.1'
+#host_ip = socket.gethostbyname(host_name)
+#host_ip ='192.168.0.102' 
+host_ip = '192.168.1.123'
 print('Хост IP:', host_ip)
 port = 9999
 socket_address = (host_ip, port)
@@ -65,7 +66,7 @@ ixx = 0
 server_socket.bind(socket_address)
 
 # Ожидание подключения клиента
-#server_socket.listen(5)
+server_socket.listen(5)
 print("Ожидание подключения клиента...")
 cap = cv2.VideoCapture(1)
 
@@ -149,7 +150,7 @@ with MSPy(device=SERIAL_PORT, loglevel='WARNING', baudrate=115200) as board:
     #                        if CMDS['roll'] <= 1680 or CMDS['roll'] <= 1000:
     #                            CMDS['roll'] = CMDS['roll'] + pid_output_roll
     #                            #cursor_msg = ' roll: {}'.format(CMDS['roll'])
-    #                    ixx += 1
+                ixx += 1
                 #time.sleep(0.0001)
                 if (time.time()-last_loop_time) >= CTRL_LOOP_TIME:
                     last_loop_time = time.time()
@@ -158,7 +159,7 @@ with MSPy(device=SERIAL_PORT, loglevel='WARNING', baudrate=115200) as board:
                     # Send the RC channel values to the FC
                     if board.send_RAW_RC([CMDS[ki] for ki in CMDS_ORDER]):
                         dataHandler = board.receive_msg()
-                        print ("---->", CMDS, board.SENSOR_DATA['altitude'], ARMED)
+                        print ("---->",ixx, CMDS, board.SENSOR_DATA['altitude'], ARMED)
                         # dataHandler
                         board.process_recv_data(dataHandler)
                 local_fast_read_imu() 

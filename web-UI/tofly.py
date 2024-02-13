@@ -248,6 +248,9 @@ def keyboard_controller(screen, dict_):
                 screen.clrtoeol()      
                 screen.addstr(6, 100, "Kinematics: {}".format(board.SENSOR_DATA['kinematics']))
                 screen.clrtoeol()   
+                
+                screen.addstr(7, 100, "ix: {}".format(str(ixx)))
+                screen.clrtoeol()  
                   
                 if (time.time()-last_slow_msg_time) >= SLOW_MSGS_LOOP_TIME:
                     last_slow_msg_time = time.time()

@@ -8,8 +8,8 @@ lib_start = tracker_lib.TrackerLib()
 lib_start.create_win()
 # Создание сокета
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-#host_ip = '192.168.1.123'  # Адрес сервера
-host_ip ='192.168.0.102'
+host_ip = '192.168.1.123'  # Адрес сервера
+#host_ip ='192.168.0.102'
 port = 9999
 client_socket.connect((host_ip, port))
 data = b""
@@ -32,7 +32,7 @@ while True:
     frame_data = data[:msg_size]
     data = data[msg_size:]
     img, init_tracker = pickle.loads(frame_data)
-     
+    img = cv2.imdecode(img, 1)
     if init_tracker:
         lib_start.init_switch = False
         lib_start.state = 0
