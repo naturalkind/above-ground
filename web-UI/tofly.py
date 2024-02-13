@@ -209,7 +209,7 @@ def keyboard_controller(screen, dict_):
 #                    cursor_msg = 'Down Key - pitch(-):{}'.format(CMDS['pitch'])
                 
                 if start_fly:
-                    if ixx > 200:
+                    if ixx > 30:
                         pid_output_throttle = pid_throttle.update(board.SENSOR_DATA['altitude'], 0.3)
                         if CMDS['throttle'] <= 1680 or CMDS['throttle'] <= 1000:
                             CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
