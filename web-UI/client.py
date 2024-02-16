@@ -9,7 +9,7 @@ lib_start.create_win()
 # Создание сокета
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_ip = '192.168.1.123'  # Адрес сервера
-#host_ip ='192.168.0.102'
+#host_ip ='192.168.0.104'
 port = 9999
 client_socket.connect((host_ip, port))
 data = b""

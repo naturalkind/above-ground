@@ -26,7 +26,8 @@ class VideoStreamWidget(object):
             if self.capture.isOpened():
                 (self.status, self.frame) = self.capture.read()
                 self.img, self.obj_center, self.img_center = lib_start.process_img_server(self.frame)   
-            time.sleep(.01)
+            time.sleep(.1)
+            #time.sleep(.01)
     def get_frame(self):
         return self.img, self.obj_center, self.img_center
 
@@ -39,8 +40,8 @@ server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 host_name = socket.gethostname()
 #host_ip = '10.42.0.1'
 #host_ip = socket.gethostbyname(host_name)
-#host_ip ='192.168.0.102' 
-host_ip = '192.168.1.123'
+host_ip ='192.168.0.104' 
+#host_ip = '192.168.1.123'
 print('Хост IP:', host_ip)
 port = 9999
 socket_address = (host_ip, port)
@@ -244,7 +245,8 @@ try:
                 client_socket, addr = server_socket.accept()
                 print('Получено соединение от:', addr, client_socket)
 finally:
-    pass
+   #print ("ERROR") 
+   pass
     
     
     

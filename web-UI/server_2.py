@@ -1,32 +1,63 @@
+import os
+import sys
 import cv2
+import time
+import curses
 import socket
 import pickle
 import struct
-import time
 import tracker_lib
+from multiprocessing import Process, Value, Array, Manager
+from collections import deque
+from itertools import cycle
 from yamspy import MSPy
+from threading import Thread
+
+
+# video stream
+
+class VideoStreamWidget(object):
+    def __init__(self, src=1):
+        self.capture = cv2.VideoCapture(src)
+        # Start the thread to read frames from the video stream
+        self.thread = Thread(target=self.update, args=())
+        self.thread.daemon = True
+        self.thread.start()
+
+    def update(self):
+        # Read the next frame from the stream in a different thread
+        while True:
+            if self.capture.isOpened():
+                (self.status, self.frame) = self.capture.read()
+                self.img, self.obj_center, self.img_center = lib_start.process_img_server(self.frame)   
+            time.sleep(.01)
+    def get_frame(self):
+        return self.img, self.obj_center, self.img_center
+
+lib_start = tracker_lib.TrackerLib()
+encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+
+
 
 # Max periods for:
 CTRL_LOOP_TIME = 1/100
+SLOW_MSGS_LOOP_TIME = 1/5 # these messages take a lot of time slowing down the loop...
 
+NO_OF_CYCLES_AVERAGE_GUI_TIME = 10
+
+
+#
+# On Linux, your serial port will probably be something like
+# /dev/ttyACM0 or /dev/ttyS0 or the same names with numbers different from 0
+#
+# On Windows, I would expect it to be 
+# COM1 or COM2 or COM3...
+#
+# This library uses pyserial, so if you have more questions try to check its docs:
+# https://pyserial.readthedocs.io/en/latest/shortintro.html
+#
+#
 SERIAL_PORT = "/dev/ttyACM0"
-
-lib_start = tracker_lib.TrackerLib()
-# Создание сокета
-server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-host_name = socket.gethostname()
-#host_ip = '10.42.0.1'
-#host_ip = socket.gethostbyname(host_name)
-#host_ip ='192.168.0.102' 
-host_ip = '192.168.1.123'
-print('Хост IP:', host_ip)
-port = 9999
-socket_address = (host_ip, port)
-
-Kp = 0.745136137394194487*20
-Ki = 0.00022393195314520642*20
-Kd = 7.404490165264038*60
-
 
 class PIDController:
     def __init__(self, kp, ki, kd):
@@ -44,139 +75,382 @@ class PIDController:
         output = (self.kp * error) + (self.ki * self.integral) + (self.kd * derivative)
         return output
 
-# Create a PID controller object throttle
-pid_throttle = PIDController(Kp, Ki, Kd) # throttle
-pid_pitch = PIDController(Kp, Ki, Kd) 
-pid_roll = PIDController(Kp, Ki, Kd)
 
-CMDS = {
-        'roll':     1500,
-        'pitch':    1500,
-        'throttle': 1000,
-        'yaw':      1500,
-        'aux1':     1000,
-        'aux2':     1000
-        }
+def run_curses(tracker_arg, dict_):
+    result=1
 
-CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2']
-start_fly = False
-ixx = 0
+    try:
+        # get the curses screen window
+        screen = curses.initscr()
 
-# Привязка сокета
-server_socket.bind(socket_address)
+        # turn off input echoing
+        curses.noecho()
 
-# Ожидание подключения клиента
-server_socket.listen(5)
-print("Ожидание подключения клиента...")
-cap = cv2.VideoCapture(1)
+        # respond to keys immediately (don't wait for enter)
+        curses.cbreak()
 
-payload_size = struct.calcsize("Q")
-data = b""
-init_tracker = False
-client_socket = False
-with MSPy(device=SERIAL_PORT, loglevel='WARNING', baudrate=115200) as board:
+        # non-blocking
+        screen.timeout(0)
 
-    last_loop_time = last_cycleTime = time.time()
-    while True:
-        if board == 1: # an error occurred...
-            print ("ERROR")
-            break
-        print ('Connecting to the FC... connected!')
-        client_socket, addr = server_socket.accept()
-        print('Получено соединение от:', addr)
+        # map arrow keys to special values
+        screen.keypad(True)
+
+        screen.addstr(1, 0, "Press 'q' to quit, 'r' to reboot, 'a' to arm, 'd' to disarm, 's' start flight and arrow keys to control altitude", curses.A_BOLD)
+        
+        result = keyboard_controller(screen, dict_)
+
+    finally:
+        # shut down cleanly
+        curses.nocbreak(); screen.keypad(0); curses.echo()
+        curses.endwin()
+        if result==1:
+            print("An error occurred... probably the serial port is not available ;)")
+
+def keyboard_controller(screen, dict_):
+    Kp = 0.745136137394194487*20
+    Ki = 0.00022393195314520642*20
+    Kd = 7.404490165264038*60
     
-        if client_socket:
+    # Create a PID controller object throttle
+    pid_throttle = PIDController(Kp, Ki, Kd) # throttle
+    pid_pitch = PIDController(Kp, Ki, Kd) 
+    pid_roll = PIDController(Kp, Ki, Kd)
+    
+    CMDS = {
+            'roll':     1500,
+            'pitch':    1500,
+            'throttle': 1000,
+            'yaw':      1500,
+            'aux1':     1000,
+            'aux2':     1000
+            }
+
+    # This order is the important bit: it will depend on how your flight controller is configured.
+    # Below it is considering the flight controller is set to use AETR.
+    # The names here don't really matter, they just need to match what is used for the CMDS dictionary.
+    # In the documentation, iNAV uses CH5, CH6, etc while Betaflight goes aux2, aux3...
+    CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2']
+    start_fly = False
+    height = 0.0
+    # "print" doesn't work with curses, use addstr instead
+    try:
+        screen.addstr(15, 0, "Connecting to the FC...")
+
+        with MSPy(device=SERIAL_PORT, loglevel='WARNING', baudrate=115200) as board:
+            if board == 1: # an error occurred...
+                return 1
+            screen.addstr(15, 0, "Connecting to the FC... connected!")
+            screen.clrtoeol()
+            screen.move(1,0)
+
+            average_cycle = deque([0]*NO_OF_CYCLES_AVERAGE_GUI_TIME)
+
+            # It's necessary to send some messages or the RX failsafe will be activated
+            # and it will not be possible to arm.
+            command_list = ['MSP_API_VERSION', 'MSP_FC_VARIANT', 'MSP_FC_VERSION', 'MSP_BUILD_INFO', 
+                            'MSP_BOARD_INFO', 'MSP_UID', 'MSP_ACC_TRIM', 'MSP_NAME', 'MSP_STATUS', 'MSP_STATUS_EX',
+                            'MSP_BATTERY_CONFIG', 'MSP_BATTERY_STATE', 'MSP_BOXNAMES']
+
+            if board.INAV:
+                command_list.append('MSPV2_INAV_ANALOG')
+                command_list.append('MSP_VOLTAGE_METER_CONFIG')
+
+            for msg in command_list: 
+                if board.send_RAW_msg(MSPy.MSPCodes[msg], data=[]):
+                    dataHandler = board.receive_msg()
+                    board.process_recv_data(dataHandler)
+            if board.INAV:
+                cellCount = board.BATTERY_STATE['cellCount']
+            else:
+                cellCount = 0 # MSPV2_INAV_ANALOG is necessary
+            min_voltage = board.BATTERY_CONFIG['vbatmincellvoltage']*cellCount
+            warn_voltage = board.BATTERY_CONFIG['vbatwarningcellvoltage']*cellCount
+            max_voltage = board.BATTERY_CONFIG['vbatmaxcellvoltage']*cellCount
+
+            screen.addstr(15, 0, "apiVersion: {}".format(board.CONFIG['apiVersion']))
+            screen.clrtoeol()
+            screen.addstr(15, 50, "flightControllerIdentifier: {}".format(board.CONFIG['flightControllerIdentifier']))
+            screen.addstr(16, 0, "flightControllerVersion: {}".format(board.CONFIG['flightControllerVersion']))
+            screen.addstr(16, 50, "boardIdentifier: {}".format(board.CONFIG['boardIdentifier']))
+            screen.addstr(17, 0, "boardName: {}".format(board.CONFIG['boardName']))
+
+            slow_msgs = cycle(['MSP_ANALOG', 'MSP_STATUS_EX', 'MSP_MOTOR', 'MSP_RC'])
+
+            cursor_msg = ""
+            last_loop_time = last_slow_msg_time = last_cycleTime = time.time()
             
             local_fast_read_attitude = board.fast_read_attitude
             local_fast_read_imu = board.fast_read_imu
             local_fast_read_altitude = board.fast_read_altitude
-            while(cap.isOpened()):
-                success, _img = cap.read()
+            while True:
                 start_time = time.time()
-                if init_tracker == False:
-                    # отправка данных
-                    a = pickle.dumps([_img, init_tracker])
-                    message = struct.pack("Q", len(a)) + a
-                    client_socket.sendall(message)
+
+                char = screen.getch() # get keypress
+                curses.flushinp() # flushes buffer
                 
-                
-                # получение данных
-                while len(data) < payload_size:
-                    packet = client_socket.recv(4*1024)
-                    if not packet: break
-                    data += packet
-                packed_msg_size = data[:payload_size]
-                data = data[payload_size:]
-                msg_size = struct.unpack("Q",packed_msg_size)[0]
-                
-                while len(data) < msg_size:
-                    data += client_socket.recv(4*1024)
-                frame_data = data[:msg_size]
-                data = data[msg_size:]
-                bbox, state, init_switch = pickle.loads(frame_data)  
-                
-                #print (state, init_switch, init_tracker)
-                if state > 1 and init_switch is True:
-                    if init_tracker == False:
-                        lib_start.init_tracker(_img, bbox)
-                    init_tracker = True
-                img, obj_center, img_center = lib_start.process_img_server(_img)     
-                
-                                
-                if init_tracker == True:
-                    a = pickle.dumps([img, init_tracker])
-                    message = struct.pack("Q", len(a)) + a
-                    client_socket.sendall(message)
-                    
-                if start_fly:
-                    if ixx > 400:
-                        pid_output_roll = pid_roll.update(img_center[0], obj_center[0]) # yaw
-                        if CMDS['yaw'] <= 1680 or CMDS['yaw'] <= 1000:
-                            CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
-                else:
-                    print ("START ARM")
+                #
+                # Key input processing
+                #
+
+                #
+                # KEYS (NO DELAYS)
+                #
+                if char == ord('q') or char == ord('Q'):
+                    break
+
+                elif char == ord('d') or char == ord('D'):
+                    cursor_msg = 'Sending Disarm command...'
+                    CMDS['aux2'] = 1000
+                    start_fly = False
+
+                elif char == ord('r') or char == ord('R'):
+                    screen.addstr(3, 0, 'Sending Reboot command...')
+                    screen.clrtoeol()
+                    board.reboot()
+                    time.sleep(0.5)
+                    break
+
+                elif char == ord('a') or char == ord('A'):
+                    cursor_msg = 'Sending Arm command...'
                     CMDS['aux2'] = 1500
-                    start_fly = True
-    #                if start_fly:
-    #                    if ixx > 200:
-    #                        pid_output_throttle = pid_throttle.update(board.SENSOR_DATA['altitude'], 0.3)
-    #                        if CMDS['throttle'] <= 1680 or CMDS['throttle'] <= 1000:
-    #                            CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
-    #                        pid_output_pitch = pid_pitch.update(board.SENSOR_DATA['kinematics'][1] , 0.0)
-    #                        pid_output_roll = pid_roll.update(board.SENSOR_DATA['kinematics'][0], 0.0)
-    #                        if CMDS['pitch'] <= 1680 or CMDS['pitch'] <= 1000:
-    #                            CMDS['pitch'] = CMDS['pitch'] + pid_output_pitch
-    #                            #cursor_msg = ' pitch: {}'.format(CMDS['pitch'])
-    #                        if CMDS['roll'] <= 1680 or CMDS['roll'] <= 1000:
-    #                            CMDS['roll'] = CMDS['roll'] + pid_output_roll
-    #                            #cursor_msg = ' roll: {}'.format(CMDS['roll'])
-                ixx += 1
-                #time.sleep(0.0001)
+                elif char == 259:
+                    height += 0.1
+                    cursor_msg = f'Target altitude: {height}' 
+                elif char == 258:
+                    height -= 0.1
+                    cursor_msg = f'Target altitude: {height}'
+                elif char == ord('s') or char == ord('S'):
+                    if ARMED:
+                        start_fly = True
+                        cursor_msg = f'Start flight...'
+                #
+                # IMPORTANT MESSAGES (CTRL_LOOP_TIME based)
+                #
                 if (time.time()-last_loop_time) >= CTRL_LOOP_TIME:
                     last_loop_time = time.time()
-                    ARMED = board.bit_check(board.CONFIG['mode'],0)
-                    
                     # Send the RC channel values to the FC
                     if board.send_RAW_RC([CMDS[ki] for ki in CMDS_ORDER]):
                         dataHandler = board.receive_msg()
-                        print ("---->",ixx, CMDS, board.SENSOR_DATA['altitude'], ARMED)
-                        # dataHandler
                         board.process_recv_data(dataHandler)
                 local_fast_read_imu() 
                 local_fast_read_attitude()
-                local_fast_read_altitude()  
+                local_fast_read_altitude()
                 
+                #
+                # SLOW MSG processing (user GUI)
+                #
+                #board.SENSOR_DATA
+                dict_["current_height"] = board.SENSOR_DATA['altitude']
+                dict_["rotation"] = board.SENSOR_DATA['kinematics']
+                
+                if start_fly:
+                    pid_output_throttle = pid_throttle.update(dict_["current_height"], height)
+                    if 1000 <= CMDS['throttle'] + pid_output_throttle  <= 1700:
+                        CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
+                #time.sleep(0.0001)
+                if dict_["init_tracker"]:
+                    if ARMED:
+                        cursor_msg = f'Init tracker is True'
+                        pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) # yaw
+                        if 1000 <= CMDS['yaw']+ pid_output_roll <= 1680:
+                            CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
+                        pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
+                        if 1000 <= CMDS['throttle']+pid_output_throttle <= 1680:
+                            CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
+                
+                screen.addstr(5, 100, "Altitude: {}".format(dict_["current_height"]))
+                screen.clrtoeol()      
+                screen.addstr(6, 100, "Kinematics: {}".format(dict_["rotation"]))
+                screen.clrtoeol()   
+                screen.addstr(7, 100, "Start flight: {}".format(str(start_fly)), curses.A_BOLD)
+                screen.clrtoeol()  
+                screen.addstr(8, 100, "Target height: {}".format(str(height)), curses.A_BOLD)
+                screen.clrtoeol()  
+                  
+                if (time.time()-last_slow_msg_time) >= SLOW_MSGS_LOOP_TIME:
+                    last_slow_msg_time = time.time()
+
+                    next_msg = next(slow_msgs) # circular list
+
+                    # Read info from the FC
+                    if board.send_RAW_msg(MSPy.MSPCodes[next_msg], data=[]):
+                        dataHandler = board.receive_msg()
+                        board.process_recv_data(dataHandler)
+                        
+                    if next_msg == 'MSP_ANALOG':
+                        voltage = board.ANALOG['voltage']
+                        voltage_msg = ""
+                        if min_voltage < voltage <= warn_voltage:
+                            voltage_msg = "LOW BATT WARNING"
+                        elif voltage <= min_voltage:
+                            voltage_msg = "ULTRA LOW BATT!!!"
+                        elif voltage >= max_voltage:
+                            voltage_msg = "VOLTAGE TOO HIGH"
+
+                        screen.addstr(8, 0, "Battery Voltage: {:2.2f}V".format(board.ANALOG['voltage']))
+                        screen.clrtoeol()
+                        screen.addstr(8, 24, voltage_msg, curses.A_BOLD + curses.A_BLINK)
+                        screen.clrtoeol()
+
+                    elif next_msg == 'MSP_STATUS_EX':
+                        ARMED = board.bit_check(board.CONFIG['mode'],0)
+                        screen.addstr(5, 0, "ARMED: {}".format(ARMED), curses.A_BOLD)
+                        screen.clrtoeol()
+
+                        screen.addstr(5, 50, "armingDisableFlags: {}".format(board.process_armingDisableFlags(board.CONFIG['armingDisableFlags'])))
+                        screen.clrtoeol()
+
+                        screen.addstr(6, 0, "cpuload: {}".format(board.CONFIG['cpuload']))
+                        screen.clrtoeol()
+                        screen.addstr(6, 50, "cycleTime: {}".format(board.CONFIG['cycleTime']))
+                        screen.clrtoeol()
+
+                        screen.addstr(7, 0, "mode: {}".format(board.CONFIG['mode']))
+                        screen.clrtoeol()
+
+                        screen.addstr(7, 50, "Flight Mode: {}".format(board.process_mode(board.CONFIG['mode'])))
+                        screen.clrtoeol()
+                    elif next_msg == 'MSP_MOTOR':
+                        screen.addstr(9, 0, "Motor Values: {}".format(board.MOTOR_DATA))
+                        screen.clrtoeol()
+
+                    elif next_msg == 'MSP_RC':
+                        screen.addstr(10, 0, "RC Channels Values: {}".format(board.RC['channels']))
+                        screen.clrtoeol()
+                        
+                    screen.addstr(17, 50, "GUI cycleTime: {0:2.2f}ms (average {1:2.2f}Hz)".format((last_cycleTime)*1000,
+                                  (sum(average_cycle)/len(average_cycle))))
+                    screen.clrtoeol()
+
+                    screen.addstr(3, 0, cursor_msg)
+                    screen.clrtoeol()
+                    
+
                 end_time = time.time()
                 last_cycleTime = end_time-start_time
                 if (end_time-start_time)<CTRL_LOOP_TIME:
-                    print ("AAAAA")
-                    time.sleep(CTRL_LOOP_TIME-(end_time-start_time))              
-                # визуализация
-    #            cv2.imshow("win", img)
-    #            if cv2.waitKey(1) & 0xff == ord('q'):
-    #                client_socket.close()
-    #                break 
+                    time.sleep(CTRL_LOOP_TIME-(end_time-start_time))
                     
-                    
-            cap.release()
-            cv2.destroyAllWindows()
+                average_cycle.append(end_time-start_time)
+                average_cycle.popleft()
+
+    finally:
+        screen.addstr(5, 0, "Disconneced from the FC!")
+        screen.clrtoeol()
+
+def image_task(tracker_arg, dict_):
+    print (tracker_arg, dict_)
+    # Создание сокета
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    host_name = socket.gethostname()
+    #host_ip = '10.42.0.1'
+    #host_ip = socket.gethostbyname(host_name)
+    #host_ip ='192.168.0.104' 
+    host_ip = '192.168.1.123'
+    print('Хост IP:', host_ip)
+    port = 9999
+    socket_address = (host_ip, port)
+    # Привязка сокета
+    server_socket.bind(socket_address)
+
+    # Ожидание подключения клиента
+    server_socket.listen(5)
+    print("Ожидание подключения клиента...")
+    #cap = cv2.VideoCapture(1)
+    video_stream_widget = VideoStreamWidget()
+
+    payload_size = struct.calcsize("Q")
+    data = b""
+    init_tracker = False
+    client_socket = False
+    
+    while(video_stream_widget.capture.isOpened()):
+        if client_socket:
+            try:
+                # Сжатие кадра в формат JPEG
+                _img, obj_center, img_center = video_stream_widget.get_frame()
+                _, img = cv2.imencode('.jpg', _img, encode_param)
+                dict_["y_target"] = obj_center[0]
+                dict_["y_current"] = img_center[0]
+                
+                dict_["z_target"] = obj_center[1]
+                dict_["z_current"] = img_center[1]
+            except AttributeError:
+                pass
+            if init_tracker == False:
+                # отправка данных
+                a = pickle.dumps([img, init_tracker])
+                message = struct.pack("Q", len(a)) + a
+                client_socket.sendall(message)
+            
+            
+            # получение данных
+            while len(data) < payload_size:
+                packet = client_socket.recv(4*1024)
+                if not packet: break
+                data += packet
+            packed_msg_size = data[:payload_size]
+            data = data[payload_size:]
+            msg_size = struct.unpack("Q",packed_msg_size)[0]
+            
+            while len(data) < msg_size:
+                data += client_socket.recv(4*1024)
+            frame_data = data[:msg_size]
+            data = data[msg_size:]
+            bbox, state, init_switch = pickle.loads(frame_data)  
+            
+            #print (state, init_switch, init_tracker)
+            if state > 1 and init_switch is True:
+                if init_tracker == False:
+                    lib_start.init_tracker(_img, bbox)
+                init_tracker = True
+              
+            
+            if init_tracker == True:
+                a = pickle.dumps([img, init_tracker])
+                message = struct.pack("Q", len(a)) + a
+                client_socket.sendall(message)
+    
+            start_time = time.time()
+            dict_["init_tracker"] = init_tracker
+        else:
+            client_socket, addr = server_socket.accept()
+            print('Получено соединение от:', addr, client_socket)
+
+    
+if __name__ == '__main__':
+    num = Value('d', 0.0)
+    with Manager() as manager:
+        dict_ = manager.dict()
+        dict_["init_switch"] = False
+        dict_["init_tracker"] = False
+        dict_["current_height"] = 0
+        dict_["throttle"] = 0
+        dict_["pitch"] = 0
+        dict_["roll"] = 0
+        dict_["yaw"] = 0
+        dict_["rotation"] = 0
+        dict_["y_target"] = 0
+        dict_["y_current"] = 0
+        dict_["z_target"] = 0
+        dict_["z_current"] = 0
+        # run the thread
+        thread1 = Process(target=run_curses, args=(num, dict_), daemon=True)              
+        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"  
+                
+        thread2 = Process(target=image_task, args=(num, dict_), daemon=True)
+        thread2.start() #"BP_FlyingPawn2_2"#"BP_FlyingPawn2_7"
+        
+        # wait for the thread to finish
+        print('Waiting for the thread...')
+        thread1.join()  
+        thread2.join()    
+        
+        
+"""
+1 запускать автоматически 
+2 при нажатии армить
+3 при нажатии запускать выбор цели
+
+"""    
