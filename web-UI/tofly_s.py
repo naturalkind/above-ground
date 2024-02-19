@@ -40,8 +40,8 @@ server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 host_name = socket.gethostname()
 #host_ip = '10.42.0.1'
 #host_ip = socket.gethostbyname(host_name)
-host_ip ='192.168.0.104' 
-#host_ip = '192.168.1.123'
+#host_ip ='192.168.0.104' 
+host_ip = '192.168.1.123'
 print('Хост IP:', host_ip)
 port = 9999
 socket_address = (host_ip, port)

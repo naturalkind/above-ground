@@ -107,9 +107,9 @@ def run_curses(tracker_arg, dict_):
             print("An error occurred... probably the serial port is not available ;)")
 
 def keyboard_controller(screen, dict_):
-    Kp = 0.745136137394194487*20
-    Ki = 0.00022393195314520642*20
-    Kd = 7.404490165264038*60
+    Kp = 0.745136137394194487 *20
+    Ki = 0.000022393195314520642 *20
+    Kd = 7.404490165264038 *60
     
     # Create a PID controller object throttle
     pid_throttle = PIDController(Kp, Ki, Kd) # throttle
@@ -244,20 +244,25 @@ def keyboard_controller(screen, dict_):
                 dict_["rotation"] = board.SENSOR_DATA['kinematics']
                 
                 if start_fly:
+                    cursor_msg = f'start flight mode {CMDS["throttle"]}'
+                    #pid_output_throttle = pid_throttle.update(height, dict_["current_height"])
                     pid_output_throttle = pid_throttle.update(dict_["current_height"], height)
-                    if 1000 <= CMDS['throttle'] + pid_output_throttle  <= 1700:
+#                    if 1000 <= CMDS['throttle'] + pid_output_throttle  <= 1700:
+                    if CMDS['throttle'] <= 1680 or CMDS['throttle'] <= 1000:
                         CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
-                #time.sleep(0.0001)
+                    time.sleep(0.001)
                 if dict_["init_tracker"]:
                     if ARMED:
-                        cursor_msg = f'Init tracker is True'
-                        pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) # yaw
-                        if 1000 <= CMDS['yaw']+ pid_output_roll <= 1680:
-                            CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
-                        pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
-                        if 1000 <= CMDS['throttle']+pid_output_throttle <= 1680:
-                            CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
-                
+                        cursor_msg = f'Init tracker is True, {CMDS["throttle"]}'
+#                        pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) # yaw
+#                        if 1000 <= CMDS['yaw']+ pid_output_roll <= 1680:
+#                            CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
+
+#                       pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
+#                        if 1000 <= CMDS['throttle']+pid_output_throttle <= 1680:
+#                        if CMDS['throttle'] <= 1680 or CMDS['throttle'] <= 1000:
+#                           CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
+#                        time.sleep(0.01)
                 screen.addstr(5, 100, "Altitude: {}".format(dict_["current_height"]))
                 screen.clrtoeol()      
                 screen.addstr(6, 100, "Kinematics: {}".format(dict_["rotation"]))
@@ -339,7 +344,6 @@ def keyboard_controller(screen, dict_):
         screen.clrtoeol()
 
 def image_task(tracker_arg, dict_):
-    print (tracker_arg, dict_)
     # Создание сокета
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -364,60 +368,64 @@ def image_task(tracker_arg, dict_):
     data = b""
     init_tracker = False
     client_socket = False
-    
-    while(video_stream_widget.capture.isOpened()):
-        if client_socket:
-            try:
-                # Сжатие кадра в формат JPEG
-                _img, obj_center, img_center = video_stream_widget.get_frame()
-                _, img = cv2.imencode('.jpg', _img, encode_param)
-                dict_["y_target"] = obj_center[0]
-                dict_["y_current"] = img_center[0]
-                
-                dict_["z_target"] = obj_center[1]
-                dict_["z_current"] = img_center[1]
-            except AttributeError:
-                pass
-            if init_tracker == False:
+    while True:
+        client_socket, addr = server_socket.accept()
+        print('Получено соединение от:', addr, client_socket)
+        try:
+            while(video_stream_widget.capture.isOpened()):
+        #    while(cap.isOpened()):
+                try:
+                    #(status, frame) = cap.read()
+                    #_img, obj_center, img_center = lib_start.process_img_server(frame)  
+                    # Сжатие кадра в формат JPEG
+                    _img, obj_center, img_center = video_stream_widget.get_frame()
+                    _, img = cv2.imencode('.jpg', _img, encode_param)
+                    dict_["y_target"] = obj_center[0]
+                    dict_["y_current"] = img_center[0]
+                    
+                    dict_["z_target"] = obj_center[1]
+                    dict_["z_current"] = img_center[1]
+                except AttributeError:
+                    pass
+                    
                 # отправка данных
                 a = pickle.dumps([img, init_tracker])
                 message = struct.pack("Q", len(a)) + a
                 client_socket.sendall(message)
-            
-            
-            # получение данных
-            while len(data) < payload_size:
-                packet = client_socket.recv(4*1024)
-                if not packet: break
-                data += packet
-            packed_msg_size = data[:payload_size]
-            data = data[payload_size:]
-            msg_size = struct.unpack("Q",packed_msg_size)[0]
-            
-            while len(data) < msg_size:
-                data += client_socket.recv(4*1024)
-            frame_data = data[:msg_size]
-            data = data[msg_size:]
-            bbox, state, init_switch = pickle.loads(frame_data)  
-            
-            #print (state, init_switch, init_tracker)
-            if state > 1 and init_switch is True:
-                if init_tracker == False:
-                    lib_start.init_tracker(_img, bbox)
-                init_tracker = True
-              
-            
-            if init_tracker == True:
-                a = pickle.dumps([img, init_tracker])
-                message = struct.pack("Q", len(a)) + a
-                client_socket.sendall(message)
+                
+                # получение данных
+                while len(data) < payload_size:
+                    packet = client_socket.recv(4*1024)
+                    if not packet: break
+                    data += packet
+                packed_msg_size = data[:payload_size]
+                data = data[payload_size:]
+                
+                if not packed_msg_size: 
+                    client_socket.close()
+                    break
+                msg_size = struct.unpack("Q", packed_msg_size)[0]
+                
+                while len(data) < msg_size:
+                    data += client_socket.recv(4*1024)
+                frame_data = data[:msg_size]
+                data = data[msg_size:]
+                bbox, state, init_switch = pickle.loads(frame_data)  
+                
+                #print (state, init_switch, init_tracker)
+                if state > 1 and init_switch is True:
+                    if init_tracker == False:
+                        lib_start.init_tracker(_img, bbox)
+                    init_tracker = True
+                  
+                dict_["init_tracker"] = init_tracker
+        except ConnectionResetError:
+            print("Клиент отключился")
+            client_socket.close()
     
-            start_time = time.time()
-            dict_["init_tracker"] = init_tracker
-        else:
-            client_socket, addr = server_socket.accept()
-            print('Получено соединение от:', addr, client_socket)
-
+    # Close the server socket
+    server_socket.close()
+    
     
 if __name__ == '__main__':
     num = Value('d', 0.0)
@@ -436,15 +444,15 @@ if __name__ == '__main__':
         dict_["z_target"] = 0
         dict_["z_current"] = 0
         # run the thread
-        thread1 = Process(target=run_curses, args=(num, dict_), daemon=True)              
-        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"  
+        #thread1 = Process(target=run_curses, args=(num, dict_), daemon=True)              
+        #thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"  
                 
         thread2 = Process(target=image_task, args=(num, dict_), daemon=True)
         thread2.start() #"BP_FlyingPawn2_2"#"BP_FlyingPawn2_7"
         
         # wait for the thread to finish
         print('Waiting for the thread...')
-        thread1.join()  
+       # thread1.join()  
         thread2.join()    
         
         

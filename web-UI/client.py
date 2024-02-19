@@ -36,9 +36,7 @@ while True:
     if init_tracker:
         lib_start.init_switch = False
         lib_start.state = 0
-    # выделение мышкой
-    bbox = lib_start.process_img_client(img)
-                        
+    #print (".............", lib_start.state, lib_start.start_x, lib_start.end_x)    
     # Если начальные и конечные координаты прямоугольника определены
     if lib_start.start_x != -1 and lib_start.end_x != -1:
         if lib_start.state != 0:
@@ -52,10 +50,10 @@ while True:
     if cv2.waitKey(1) & 0xff == ord('q'):
         client_socket.close()
         break
-          
+             
     # Отправка обработанного изображения серверу
     #img = cv2.flip(img, 1)
-    a = pickle.dumps((bbox,
+    a = pickle.dumps((lib_start.bbox,
                       lib_start.state,
                       lib_start.init_switch))
     message = struct.pack("Q", len(a)) + a
