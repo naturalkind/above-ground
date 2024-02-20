@@ -352,7 +352,8 @@ def image_task(tracker_arg, dict_):
     #host_ip = socket.gethostbyname(host_name)
     #host_ip ='192.168.0.104' 
     #host_ip = '192.168.1.123'
-    host_ip = "10.42.0.223"
+    #host_ip = "10.42.0.223"
+    host_ip = "192.168.31.108"
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -362,8 +363,8 @@ def image_task(tracker_arg, dict_):
     # Ожидание подключения клиента
     server_socket.listen(5)
     print("Ожидание подключения клиента...")
-    #cap = cv2.VideoCapture(1)
-    video_stream_widget = VideoStreamWidget()
+    cap = cv2.VideoCapture(0)
+    # video_stream_widget = VideoStreamWidget()
 
     payload_size = struct.calcsize("Q")
     data = b""
@@ -373,13 +374,13 @@ def image_task(tracker_arg, dict_):
         client_socket, addr = server_socket.accept()
         print('Получено соединение от:', addr, client_socket)
         try:
-            while(video_stream_widget.capture.isOpened()):
-        #    while(cap.isOpened()):
+            # while(video_stream_widget.capture.isOpened()):
+           while(cap.isOpened()):
                 try:
-                    #(status, frame) = cap.read()
-                    #_img, obj_center, img_center = lib_start.process_img_server(frame)  
+                    (status, frame) = cap.read()
+                    _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])  
                     # Сжатие кадра в формат JPEG
-                    _img, obj_center, img_center = video_stream_widget.get_frame()
+                    # _img, obj_center, img_center = video_stream_widget.get_frame()
                     _, img = cv2.imencode('.jpg', _img, encode_param)
                     dict_["y_target"] = obj_center[0]
                     dict_["y_current"] = img_center[0]
@@ -411,27 +412,17 @@ def image_task(tracker_arg, dict_):
                     data += client_socket.recv(4*1024)
                 frame_data = data[:msg_size]
                 data = data[msg_size:]
-                bbox, state, init_switch = pickle.loads(frame_data)  
-                # lib_start.state = state
-                
-# False 1 False
-# False 1 False
-# False 1 False
-# False 1 False
-# False 2 True
-# True 0 False
-# True 0 False
-# True 0 False
-# True 0 False
-# True 0 False
+                bbox, state, init_switch = pickle.loads(frame_data)
 
                 if state > 1:
                     print ("INIT TRACK")
                     lib_start.init_tracker(_img, bbox)
                     lib_start.state = 0
+                    init_tracker = True
+
                 lib_start.init_switch = init_switch
-                print (init_switch, lib_start.init_switch)
                 dict_["init_tracker"] = init_tracker
+                print (init_tracker, lib_start.init_switch)
         except ConnectionResetError:
             print("Клиент отключился")
             client_socket.close()

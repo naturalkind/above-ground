@@ -92,7 +92,6 @@ class TrackerLib(object):
             #img = self.increase_brightness(img)
             #img = cv2.flip(img, 1)
             img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
-            print (self.state)
             if self.state > 1:
                 try:
                     cv2.rectangle(img, self.bbox, (255, 0, 0), 10)  
@@ -243,10 +242,10 @@ class TrackerLib(object):
         
 
 
-    def process_img_server(self, img):
+    def process_img_server(self, img, init_tracker):
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
         obj_center = [0,0]
-        if self.init_switch:
+        if self.init_switch == True or init_tracker == True:
             # Обновление трекера CSRT
             csrt_success, csrt_bbox = self.csrt_tracker.update(img)
             
