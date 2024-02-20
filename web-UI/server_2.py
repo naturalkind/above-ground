@@ -17,7 +17,7 @@ from threading import Thread
 # video stream
 
 class VideoStreamWidget(object):
-    def __init__(self, src=1):
+    def __init__(self, src=0):
         self.capture = cv2.VideoCapture(src)
         # Start the thread to read frames from the video stream
         self.thread = Thread(target=self.update, args=())
@@ -351,7 +351,8 @@ def image_task(tracker_arg, dict_):
     #host_ip = '10.42.0.1'
     #host_ip = socket.gethostbyname(host_name)
     #host_ip ='192.168.0.104' 
-    host_ip = '192.168.1.123'
+    #host_ip = '192.168.1.123'
+    host_ip = "10.42.0.223"
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -411,13 +412,25 @@ def image_task(tracker_arg, dict_):
                 frame_data = data[:msg_size]
                 data = data[msg_size:]
                 bbox, state, init_switch = pickle.loads(frame_data)  
+                # lib_start.state = state
                 
-                #print (state, init_switch, init_tracker)
-                if state > 1 and init_switch is True:
-                    if init_tracker == False:
-                        lib_start.init_tracker(_img, bbox)
-                    init_tracker = True
-                  
+# False 1 False
+# False 1 False
+# False 1 False
+# False 1 False
+# False 2 True
+# True 0 False
+# True 0 False
+# True 0 False
+# True 0 False
+# True 0 False
+
+                if state > 1:
+                    print ("INIT TRACK")
+                    lib_start.init_tracker(_img, bbox)
+                    lib_start.state = 0
+                lib_start.init_switch = init_switch
+                print (init_switch, lib_start.init_switch)
                 dict_["init_tracker"] = init_tracker
         except ConnectionResetError:
             print("Клиент отключился")

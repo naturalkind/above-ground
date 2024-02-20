@@ -8,8 +8,11 @@ lib_start = tracker_lib.TrackerLib()
 lib_start.create_win()
 # Создание сокета
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-host_ip = '192.168.1.123'  # Адрес сервера
-#host_ip ='192.168.0.104'
+#host_ip = '192.168.1.123'  # Адрес сервера
+#host_ip = '192.168.0.104'
+#host_ip ='192.168.31.108'
+#host_ip = '10.42.0.1'
+host_ip = '10.42.0.223'
 port = 9999
 client_socket.connect((host_ip, port))
 data = b""
@@ -17,7 +20,8 @@ payload_size = struct.calcsize("Q")
 
 while True:
     timer = cv2.getTickCount()
-    
+    if lib_start.state > 1:
+        lib_start.state = 0
     # получение данных
     while len(data) < payload_size:
         packet = client_socket.recv(4*1024)
@@ -33,10 +37,22 @@ while True:
     data = data[msg_size:]
     img, init_tracker = pickle.loads(frame_data)
     img = cv2.imdecode(img, 1)
-    if init_tracker:
-        lib_start.init_switch = False
-        lib_start.state = 0
-    #print (".............", lib_start.state, lib_start.start_x, lib_start.end_x)    
+    #if init_tracker:
+        #lib_start.init_switch = False
+        #lib_start.state = 0
+        
+    print (lib_start.init_switch, lib_start.init_switch)  
+# False 1 False
+# False 1 False
+# False 1 False
+# False 1 False
+# False 1 False
+# True 0 False
+# True 0 False
+# True 0 False
+# True 0 False
+# True 0 False
+    print (lib_start.start_x, lib_start.end_x)
     # Если начальные и конечные координаты прямоугольника определены
     if lib_start.start_x != -1 and lib_start.end_x != -1:
         if lib_start.state != 0:

@@ -10,6 +10,7 @@ orto.jpg
 env
 venv
 tb_logs
+/web-UI/YAMSPy
 data/granitnoe.dae
 data/Street.FBX
 data/AirSimNH.zip

@@ -82,7 +82,7 @@ class TrackerLib(object):
         cv2.setMouseCallback('win', self.draw_rectangle)   
         
     def start_stream(self):
-        self.cap = cv2.VideoCapture(1)
+        self.cap = cv2.VideoCapture(0)
         # ROI in video
         while self.cap.isOpened():
             # FPS варианты
@@ -92,7 +92,7 @@ class TrackerLib(object):
             #img = self.increase_brightness(img)
             #img = cv2.flip(img, 1)
             img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
-            
+            print (self.state)
             if self.state > 1:
                 try:
                     cv2.rectangle(img, self.bbox, (255, 0, 0), 10)  
@@ -234,12 +234,13 @@ class TrackerLib(object):
         cv2.destroyAllWindows()
         
     def init_tracker(self, img, bbox):
+        self.state = 0 
         self.csrt_tracker = cv2.TrackerCSRT_create()
         self.kcf_tracker = cv2.TrackerKCF_create()
         self.csrt_tracker.init(img, bbox) 
-        self.kcf_tracker.init(img, bbox) 
-        self.init_switch = True
-        self.state = 0
+        self.kcf_tracker.init(img, bbox)
+        # self.init_switch = True
+        
 
 
     def process_img_server(self, img):
@@ -353,7 +354,7 @@ class TrackerLib(object):
                 B = (bbox[1]+bbox[3])+y_//2 
                 
                 distance = (p_dist+p_dist_point+p_dist_point2)/3
-        self.state = 0
+        #self.state = 0
         return img, obj_center, img_center
 
 
