@@ -51,7 +51,7 @@ class TrackerLib(object):
                 self.end_y = y
             self.p2 = [self.end_x, self.end_y]
             self.bbox = (self.p1[0], self.p1[1], self.p2[0]-self.p1[0], self.p2[1]-self.p1[1])
-            self.init_switch = True
+            #self.init_switch = True
             
     def get_center(self, img, x, y, w, h):
         xcentr = int(x+(w/2))
@@ -82,7 +82,7 @@ class TrackerLib(object):
         cv2.setMouseCallback('win', self.draw_rectangle)   
         
     def start_stream(self):
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(1)
         # ROI in video
         while self.cap.isOpened():
             # FPS варианты
@@ -93,16 +93,14 @@ class TrackerLib(object):
             #img = cv2.flip(img, 1)
             img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
             if self.state > 1:
-                try:
+                if sum(self.bbox[-2:]) > 10:
                     cv2.rectangle(img, self.bbox, (255, 0, 0), 10)  
                     self.state = 0
                     self.csrt_tracker = cv2.TrackerCSRT_create()
                     self.kcf_tracker = cv2.TrackerKCF_create()
                     self.csrt_tracker.init(img, self.bbox) 
                     self.kcf_tracker.init(img, self.bbox) 
-                    #self.init_switch = True
-                except:
-                    pass
+                    self.init_switch = True
                 
             if self.init_switch:
                 # Обновление трекера CSRT
@@ -238,7 +236,7 @@ class TrackerLib(object):
         self.kcf_tracker = cv2.TrackerKCF_create()
         self.csrt_tracker.init(img, bbox) 
         self.kcf_tracker.init(img, bbox)
-        # self.init_switch = True
+        self.init_switch = True
         
 
 
