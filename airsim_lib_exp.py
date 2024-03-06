@@ -22,7 +22,7 @@ from matplotlib import animation
 """
 Этот код создает экземпляр PID-регулятора с определенными коэффициентами Kp, Ki и Kd. 
 Затем он подключается к симулятору AirSim и запускает цикл управления. 
-В цикле он получает текущую высоту, вычисляет ошибку относительно целевой высоты, 
+В цикле он получает текущую позичу, вычисляет ошибку относительно целевой позиции обьекта, 
 обновляет PID-регулятор и применяет получившийся управляющий сигнал к функции moveByRC
 
 Вперёд
@@ -70,52 +70,6 @@ from matplotlib import animation
 client = airsim.MultirotorClient() #ip="192.168.1.100", port = 41451
 client.confirmConnection()
 client.reset()
-print ("START")
-
-class KalmanFilterPID:
-    def __init__(self, Kp, Ki, Kd, dt):
-        # PID gains
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-
-        # Sampling time
-        self.dt = dt
-
-        # Kalman filter variables
-        self.x = np.zeros(2)  # State vector [position, velocity]
-        self.P = np.eye(2)  # Error covariance matrix
-        self.Q = np.eye(2)  # Process noise covariance matrix
-        self.R = np.eye(1)  # Measurement noise covariance matrix
-
-        # PID variables
-        self.error_sum = 0.0
-        self.prev_error = 0.0
-
-    def update(self, setpoint, measurement):
-        # Prediction step
-        self.x[0] += self.dt * self.x[1]  # Predicted position
-        self.P[0, 0] += self.dt * (self.P[1, 1] + self.P[0, 1] + self.P[1, 0] + self.Q[0, 0])  # Predicted error covariance
-
-        # Kalman gain calculation
-        K = self.P[0, 0] / (self.P[0, 0] + self.R[0, 0])
-
-        # Update step
-        self.x[0] += K * (measurement - self.x[0])  # Updated position
-        self.x[1] = self.x[1] + K * (measurement - self.x[0]) / self.dt  # Updated velocity
-        self.P[0, 0] -= K * self.P[0, 0]  # Updated error covariance
-
-        # PID control calculation
-        error = setpoint - self.x[0]
-        self.error_sum += error * self.dt
-        error_rate = (error - self.prev_error) / self.dt
-
-        output = self.Kp * error + self.Ki * self.error_sum + self.Kd * error_rate
-
-        # Update previous error
-        self.prev_error = error
-
-        return output
 
 class PIDController:
     def __init__(self, kp, ki, kd):
@@ -240,91 +194,6 @@ def fly_on_path(tracker_arg, dict_, all_data, name_drone):
 #    result = client.moveOnPathAsync(all_data, 12, 120, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1, vehicle_name=name_drone).join()
     result = client.moveOnPathAsync(all_data, 12, 12, airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1, vehicle_name=name_drone).join()
     print("flying on path coord position...", name_drone) 
-
-
-########################
-# Генетический алгоритм для создания pid
-########################
-
-## Функция для симуляции квадрокоптера с заданными параметрами PID
-#def simulate_pid(params):
-#    # Инициализация AirSim
-#    client = airsim.MultirotorClient()
-
-#    client.confirmConnection()
-
-#    # Задание параметров PID
-#    kp, ki, kd = params
-
-#    # Задание других параметров симуляции
-#    max_time = 10  # Продолжительность симуляции в секундах
-#    dt = 0.1  # Шаг времени в секундах
-
-#    # Начальные условия
-#    initial_pose = airsim.Pose(airsim.Vector3r(0, 0, -10), airsim.to_quaternion(0, 0, 0))
-#    client.simSetVehiclePose(initial_pose, True)
-
-#    # Симуляция
-#    for _ in range(int(max_time / dt)):
-#        # Получение текущей позиции
-#        pose = client.simGetVehiclePose()
-#        position = pose.position
-#        print (position)
-#        # Рассчет управляющего воздействия с использованием PID
-#        control_input = kp * position.x_val + ki * position.y_val + kd * position.z_val
-
-#        # Применение управляющего воздействия
-##        client.moveByVelocityZ(control_input, 0, 0, dt)
-#        client.moveByRC(rcdata = airsim.RCData(pitch = 0.0,
-#                                               throttle = control_input,
-#                                               yaw=0.0,
-#                                               roll=0.0,
-#                                               is_initialized = True,
-#                                               is_valid = True))        
-
-#    # Получение финальной позиции
-#    final_pose = client.simGetVehiclePose()
-#    final_position = final_pose.position
-
-#    # Закрытие соединения
-#    client.reset()
-#    client.enableApiControl(False)
-
-#    # Возвращение значения функции приспособленности (цель - минимизация расстояния до целевой точки)
-#    return np.sqrt(final_position.x_val**2 + final_position.y_val**2 + final_position.z_val**2),
-
-## Создание класса FitnessMin для минимизации функции приспособленности
-#creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-
-## Создание класса Individual с одним атрибутом, представляющим параметры PID
-#creator.create("Individual", list, fitness=creator.FitnessMin)
-
-## Определение функции для инициализации особи
-#def init_individual():
-#    return [np.random.uniform(0, 1) for _ in range(3)]  # Инициализация случайных значений для параметров PID
-
-## Определение генетических операторов
-#toolbox = base.Toolbox()
-#toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
-#toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-#toolbox.register("evaluate", simulate_pid)
-#toolbox.register("mate", tools.cxBlend, alpha=0.5)
-#toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.2, indpb=0.2)
-#toolbox.register("select", tools.selTournament, tournsize=3)
-
-## Создание начальной популяции
-#population = toolbox.population(n=10)
-
-## Запуск генетического алгоритма
-#algorithms.eaMuPlusLambda(population, toolbox, mu=10, lambda_=20, cxpb=0.7, mutpb=0.3, ngen=10, stats=None, halloffame=None)
-
-## Вывод лучшей особи
-#best_individual = tools.selBest(population, k=1)[0]
-#print("Best Individual:", best_individual)
-#print("Best Fitness:", best_individual.fitness.values)
-
-######
-######
 
 def calc_angle(drone_yaw, object_yaw):
     angle = object_yaw - drone_yaw
@@ -523,18 +392,12 @@ if __name__ == "__main__":
         ####################
         
         # run the thread
-        thread1 = Process(target=from_fly_path, args=(num, dict_, "BP_FlyingPawn_2", "BP_FlyingPawn2_5"), daemon=True) #"BP_FlyingPawn_4", "BP_FlyingPawn2_7"
-        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"          
+        thread1 = Process(target=from_fly_path, args=(num, dict_, "BP_FlyingPawn_2", "BP_FlyingPawn2_5"), daemon=True) 
+        thread1.start()           
         thread2 = Process(target=fly_on_path, args=(num, dict_, all_data, "BP_FlyingPawn2_5"), daemon=True)
-        thread2.start() #"BP_FlyingPawn2_2"#"BP_FlyingPawn2_7"
+        thread2.start() 
         # wait for the thread to finish
         print('Waiting for the thread...')
         thread1.join()  
         thread2.join()
-
-"""
-Настроить генетический алгоритм
-для движения за дроном вперёд
-
-"""
 
