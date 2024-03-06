@@ -4,7 +4,6 @@ import cv2
 import time
 import math
 import airsim
-import tracker_lib
 import numpy as np
 from numpy.linalg import norm
 
@@ -359,12 +358,12 @@ def from_fly_path(tracker_arg, dict_, name_drone, name_drone_target):
                                                                             #roll=control_signal_y, # рысканье
                                                                             is_initialized = True,
                                                                             is_valid = True))
-            time.sleep(0.006)
+            time.sleep(0.0001) 
         else:
             client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(throttle = -control_signal_z, # тяга
                                                                             is_initialized = True,
                                                                             is_valid = True))            
-            time.sleep(0.004) 
+            time.sleep(0.0001)  
             
         # Влияет время задержки и сигналы
         ix += 1

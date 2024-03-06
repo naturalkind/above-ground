@@ -4,7 +4,6 @@ import cv2
 import time
 import math
 import airsim
-import tracker_lib
 import numpy as np
 from numpy.linalg import norm
 

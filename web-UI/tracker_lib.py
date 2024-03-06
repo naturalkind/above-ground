@@ -2,7 +2,6 @@ import  cv2
 import time
 import numpy as np
 
-# Калибровка
 class TrackerLib(object):
     def __init__(self):
         # Флаг для отслеживания режима рисования прямоугольника
