@@ -1,3 +1,0 @@
-/home/orange/deep_v2/build/CMakeFiles/NPU.dir
-/home/orange/deep_v2/build/CMakeFiles/edit_cache.dir
-/home/orange/deep_v2/build/CMakeFiles/rebuild_cache.dir
