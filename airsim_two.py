@@ -139,6 +139,7 @@ def image_task(tracker_arg, dict_, name_drone):
         _, obj_center, img_center = _lib.stream_from_ue(img)
         dict_["y_current"] = img_center[0]
         dict_["y_target"] = obj_center[0]
+        dict_["init_switch"] = _lib.init_switch
         cv2.imshow("win", img)
         if cv2.waitKey(1) & 0xff == ord('q'):
             break   
@@ -200,8 +201,10 @@ def test_pid_up(tracker_arg, dict_, name_drone): #
         # Calculate the PID output
         pid_output = pid_controller.update(current_height, target_height)
         
-        control_signal_y = pid_y.update(dict_["y_current"], dict_["y_target"])
-        
+        if dict_["init_switch"]:
+            control_signal_y = pid_y.update(dict_["y_current"], dict_["y_target"])
+        else: 
+            control_signal_y = 0
         
         dict_["throttle"] = -pid_output
         client.moveByRC(vehicle_name=name_drone, rcdata = airsim.RCData(#pitch = dict_["pitch"], # 5.0 max
