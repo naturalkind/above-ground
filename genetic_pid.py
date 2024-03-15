@@ -7,217 +7,85 @@ from deap import base, creator, tools, algorithms
 # Генетический алгоритм для создания pid
 ########################
 
-## Функция для симуляции квадрокоптера с заданными параметрами PID
-#def simulate_pid(params):
-#    # Инициализация AirSim
-#    client = airsim.MultirotorClient()
+# Функция для симуляции квадрокоптера с заданными параметрами PID
+def simulate_pid(params):
+    # Инициализация AirSim
+    client = airsim.MultirotorClient()
 
-#    client.confirmConnection()
+    client.confirmConnection()
 
-#    # Задание параметров PID
-#    kp, ki, kd = params
+    # Задание параметров PID
+    kp, ki, kd = params
 
-#    # Задание других параметров симуляции
-#    max_time = 10  # Продолжительность симуляции в секундах
-#    dt = 0.1  # Шаг времени в секундах
+    # Задание других параметров симуляции
+    max_time = 10  # Продолжительность симуляции в секундах
+    dt = 0.1  # Шаг времени в секундах
 
-#    # Начальные условия
-#    initial_pose = airsim.Pose(airsim.Vector3r(0, 0, -10), airsim.to_quaternion(0, 0, 0))
-#    client.simSetVehiclePose(initial_pose, True)
+    # Начальные условия
+    initial_pose = airsim.Pose(airsim.Vector3r(0, 0, -10), airsim.to_quaternion(0, 0, 0))
+    client.simSetVehiclePose(initial_pose, True)
 
-#    # Симуляция
-#    for _ in range(int(max_time / dt)):
-#        # Получение текущей позиции
-#        pose = client.simGetVehiclePose()
-#        position = pose.position
-#        print (position)
-#        # Рассчет управляющего воздействия с использованием PID
-#        control_input = kp * position.x_val + ki * position.y_val + kd * position.z_val
+    # Симуляция
+    for _ in range(int(max_time / dt)):
+        # Получение текущей позиции
+        pose = client.simGetVehiclePose()
+        position = pose.position
+        print (position)
+        # Рассчет управляющего воздействия с использованием PID
+        control_input = kp * position.x_val + ki * position.y_val + kd * position.z_val
 
-#        # Применение управляющего воздействия
-##        client.moveByVelocityZ(control_input, 0, 0, dt)
-#        client.moveByRC(rcdata = airsim.RCData(pitch = 0.0,
-#                                               throttle = control_input,
-#                                               yaw=0.0,
-#                                               roll=0.0,
-#                                               is_initialized = True,
-#                                               is_valid = True))        
+        # Применение управляющего воздействия
+#        client.moveByVelocityZ(control_input, 0, 0, dt)
+        client.moveByRC(rcdata = airsim.RCData(pitch = 0.0,
+                                               throttle = control_input,
+                                               yaw=0.0,
+                                               roll=0.0,
+                                               is_initialized = True,
+                                               is_valid = True))        
 
-#    # Получение финальной позиции
-#    final_pose = client.simGetVehiclePose()
-#    final_position = final_pose.position
+    # Получение финальной позиции
+    final_pose = client.simGetVehiclePose()
+    final_position = final_pose.position
 
-#    # Закрытие соединения
-#    client.reset()
-#    client.enableApiControl(False)
+    # Закрытие соединения
+    client.reset()
+    client.enableApiControl(False)
 
-#    # Возвращение значения функции приспособленности (цель - минимизация расстояния до целевой точки)
-#    return np.sqrt(final_position.x_val**2 + final_position.y_val**2 + final_position.z_val**2),
+    # Возвращение значения функции приспособленности (цель - минимизация расстояния до целевой точки)
+    return np.sqrt(final_position.x_val**2 + final_position.y_val**2 + final_position.z_val**2),
 
-## Создание класса FitnessMin для минимизации функции приспособленности
-#creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+# Создание класса FitnessMin для минимизации функции приспособленности
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 
-## Создание класса Individual с одним атрибутом, представляющим параметры PID
-#creator.create("Individual", list, fitness=creator.FitnessMin)
+# Создание класса Individual с одним атрибутом, представляющим параметры PID
+creator.create("Individual", list, fitness=creator.FitnessMin)
 
-## Определение функции для инициализации особи
-#def init_individual():
-#    return [np.random.uniform(0, 1) for _ in range(3)]  # Инициализация случайных значений для параметров PID
+# Определение функции для инициализации особи
+def init_individual():
+    return [np.random.uniform(0, 1) for _ in range(3)]  # Инициализация случайных значений для параметров PID
 
-## Определение генетических операторов
-#toolbox = base.Toolbox()
-#toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
-#toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-#toolbox.register("evaluate", simulate_pid)
-#toolbox.register("mate", tools.cxBlend, alpha=0.5)
-#toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.2, indpb=0.2)
-#toolbox.register("select", tools.selTournament, tournsize=3)
+# Определение генетических операторов
+toolbox = base.Toolbox()
+toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+toolbox.register("evaluate", simulate_pid)
+toolbox.register("mate", tools.cxBlend, alpha=0.5)
+toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.2, indpb=0.2)
+toolbox.register("select", tools.selTournament, tournsize=3)
 
-## Создание начальной популяции
-#population = toolbox.population(n=10)
+# Создание начальной популяции
+population = toolbox.population(n=10)
 
-## Запуск генетического алгоритма
-#algorithms.eaMuPlusLambda(population, toolbox, mu=10, lambda_=20, cxpb=0.7, mutpb=0.3, ngen=10, stats=None, halloffame=None)
+# Запуск генетического алгоритма
+algorithms.eaMuPlusLambda(population, toolbox, mu=10, lambda_=20, cxpb=0.7, mutpb=0.3, ngen=10, stats=None, halloffame=None)
 
-## Вывод лучшей особи
-#best_individual = tools.selBest(population, k=1)[0]
-#print("Best Individual:", best_individual)
-#print("Best Fitness:", best_individual.fitness.values)
+# Вывод лучшей особи
+best_individual = tools.selBest(population, k=1)[0]
+print("Best Individual:", best_individual)
+print("Best Fitness:", best_individual.fitness.values)
 
 ######
 ######
-"""
-
-Этот код создает экземпляр PID-регулятора с определенными коэффициентами Kp, Ki и Kd. 
-Затем он подключается к симулятору AirSim и запускает цикл управления. В цикле он 
-получает текущую высоту, вычисляет ошибку относительно целевой высоты, обновляет 
-PID-регулятор и применяет получившийся управляющий сигнал к функции moveByRC
-
-"""
-
-class KalmanFilterPID:
-    def __init__(self, Kp, Ki, Kd, dt):
-        # PID gains
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-
-        # Sampling time
-        self.dt = dt
-
-        # Kalman filter variables
-        self.x = np.zeros(2)  # State vector [position, velocity]
-        self.P = np.eye(2)  # Error covariance matrix
-        self.Q = np.eye(2)  # Process noise covariance matrix
-        self.R = np.eye(1)  # Measurement noise covariance matrix
-
-        # PID variables
-        self.error_sum = 0.0
-        self.prev_error = 0.0
-
-    def update(self, setpoint, measurement):
-        # Prediction step
-        self.x[0] += self.dt * self.x[1]  # Predicted position
-        self.P[0, 0] += self.dt * (self.P[1, 1] + self.P[0, 1] + self.P[1, 0] + self.Q[0, 0])  # Predicted error covariance
-
-        # Kalman gain calculation
-        K = self.P[0, 0] / (self.P[0, 0] + self.R[0, 0])
-
-        # Update step
-        self.x[0] += K * (measurement - self.x[0])  # Updated position
-        self.x[1] = self.x[1] + K * (measurement - self.x[0]) / self.dt  # Updated velocity
-        self.P[0, 0] -= K * self.P[0, 0]  # Updated error covariance
-
-        # PID control calculation
-        error = setpoint - self.x[0]
-        self.error_sum += error * self.dt
-        error_rate = (error - self.prev_error) / self.dt
-
-        output = self.Kp * error + self.Ki * self.error_sum + self.Kd * error_rate
-
-        # Update previous error
-        self.prev_error = error
-
-        return output
-
-class PIDController:
-    def __init__(self, target_height, Kp, Ki, Kd):
-        self.target_height = target_height
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.last_error = 0
-        self.integral = 0
-
-    def get_pid(self, current_height):
-        error = self.target_height - current_height
-        self.integral += error
-        derivative = error - self.last_error
-        self.last_error = error
-
-        pid_output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
-        return pid_output
-
-# Connect to the AirSim simulator
-client = airsim.MultirotorClient()
-client.confirmConnection()
-client.reset()
-
-# Set the target height for the PID controller (in meters)
-target_height = -10
-
-# Set the PID controller gains
-
-# 25 сек
-#Kp = 0.06
-#Ki = 0.0001 
-#Kd = 7.0
-
-
-## 10 сек
-#Kp = 0.06
-#Ki = 0.0003 
-#Kd = 9.0
-
-Kp = 0.045136137394194487
-Ki = 0.00022393195314520642 
-Kd = 6.404490165264038
-
-# Create a PID controller object
-pid_controller = PIDController(target_height, Kp, Ki, Kd)
-
-# Take off to a safe height
-client.moveByRC(rcdata = airsim.RCData(pitch = 0.0,
-                    throttle = 0.6,
-                    yaw=0.0,
-                    roll=0.0,
-                    is_initialized = True,
-                    is_valid = True)) 
-time.sleep(1)
-
-
-start_time = time.time()
-f_kalman = KalmanFilterPID(Kp, Ki, Kd, 0.1)
-# Start the main control loop
-while True:
-    # Get the current height from the AirSim simulator
-    current_height = client.getMultirotorState().kinematics_estimated.position.z_val
-    
-#    pid_output = f_kalman.update(target_height, current_height)
-    # Calculate the PID output
-    pid_output = pid_controller.get_pid(current_height)
-
-    # Adjust throttle based on PID output
-    client.moveByRC(rcdata = airsim.RCData(pitch = 0.0,
-                                           throttle = -pid_output,
-                                           yaw=0.0,
-                                           roll=0.0,
-                                           is_initialized = True,
-                                           is_valid = True))
-    print (-pid_output, current_height, "error:", pid_controller.last_error, "time:", time.time()-start_time)
-    time.sleep(0.01)
-    
-    
 
 #import random
 
