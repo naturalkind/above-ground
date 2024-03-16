@@ -310,9 +310,9 @@ init_individual = init_individual()
 print ("....", simulate_pid(init_individual))
 
 ## Определение генетических операторов
-#toolbox = base.Toolbox()
-#toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
-#toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+toolbox = base.Toolbox()
+toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 #toolbox.register("evaluate", simulate_pid)
 #toolbox.register("mate", tools.cxBlend, alpha=0.5)
 #toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.2, indpb=0.2)
