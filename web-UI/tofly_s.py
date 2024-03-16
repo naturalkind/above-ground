@@ -11,6 +11,7 @@ from collections import deque
 from itertools import cycle
 from yamspy import MSPy
 from threading import Thread
+import numpy as np
 
 class VideoStreamWidget(object):
     def __init__(self, src=1):
@@ -25,8 +26,8 @@ class VideoStreamWidget(object):
         while True:
             if self.capture.isOpened():
                 (self.status, self.frame) = self.capture.read()
-                self.img, self.obj_center, self.img_center = lib_start.process_img_server(self.frame)   
-            time.sleep(.1)
+                self.img, self.obj_center, self.img_center = lib_start.process_img_server(self.frame, init_tracker)   
+            #time.sleep(.1)
             #time.sleep(.01)
     def get_frame(self):
         return self.img, self.obj_center, self.img_center
@@ -58,7 +59,8 @@ payload_size = struct.calcsize("Q")
 data = b""
 init_tracker = False
 client_socket = False
-
+dict_ = {}
+dict_["init_tracker"] = False
 
 Kp = 0.745136137394194487*20
 Ki = 0.00022393195314520642*20
@@ -157,18 +159,18 @@ try:
         local_fast_read_altitude = board.fast_read_altitude
         while(video_stream_widget.capture.isOpened()):
             if client_socket:
+            
                 try:
                     # Сжатие кадра в формат JPEG
                     _img, obj_center, img_center = video_stream_widget.get_frame()
                     _, img = cv2.imencode('.jpg', _img, encode_param)
                 except AttributeError:
                     pass
-                if init_tracker == False:
-                    # отправка данных
-                    a = pickle.dumps([img, init_tracker])
-                    message = struct.pack("Q", len(a)) + a
-                    client_socket.sendall(message)
-                
+            
+                # отправка данных
+                a = pickle.dumps([img, init_tracker])
+                message = struct.pack("Q", len(a)) + a
+                client_socket.sendall(message)
                 
                 # получение данных
                 while len(data) < payload_size:
@@ -177,34 +179,33 @@ try:
                     data += packet
                 packed_msg_size = data[:payload_size]
                 data = data[payload_size:]
-                msg_size = struct.unpack("Q",packed_msg_size)[0]
+                
+                if not packed_msg_size: 
+                    client_socket.close()
+                    break
+                msg_size = struct.unpack("Q", packed_msg_size)[0]
                 
                 while len(data) < msg_size:
                     data += client_socket.recv(4*1024)
                 frame_data = data[:msg_size]
                 data = data[msg_size:]
-                bbox, state, init_switch = pickle.loads(frame_data)  
-                
-                #print (state, init_switch, init_tracker)
-                if state > 1 and init_switch is True:
-                    if init_tracker == False:
+                bbox, state, init_switch = pickle.loads(frame_data)
+
+                if state > 1:
+                    if sum(bbox[-2:]) > 10:
                         lib_start.init_tracker(_img, bbox)
-                    init_tracker = True
-                  
-                
-                if init_tracker == True:
-                    a = pickle.dumps([img, init_tracker])
-                    message = struct.pack("Q", len(a)) + a
-                    client_socket.sendall(message)
+                        lib_start.state = 0
+                        init_tracker = True
 
-        
+                lib_start.init_switch = init_switch
+                dict_["init_tracker"] = init_tracker   
+                         
                 start_time = time.time()
-
+                
                 if ixx > 40:
-                    CMDS['aux2'] = 1500
+                    CMDS['aux1'] = 1500
                     start_fly = True
                     
-                print (img_center[0], obj_center[0], ixx)
                 if start_fly:
                     if init_tracker:
                         pid_output_roll = pid_roll.update(obj_center[0], img_center[0]) # yaw
@@ -217,7 +218,6 @@ try:
                             print ("THRO", pid_output_throttle, CMDS['throttle'], CMDS['throttle']+pid_output_throttle)
                             CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
                 ixx += 1
-                time.sleep(0.0001)
                 
                 
                 if (time.time()-last_loop_time) >= CTRL_LOOP_TIME:
@@ -229,9 +229,6 @@ try:
                 local_fast_read_attitude()
                 local_fast_read_altitude()
                 
-                  
-
-                        
 
                 end_time = time.time()
                 last_cycleTime = end_time-start_time
@@ -247,23 +244,4 @@ try:
 finally:
    #print ("ERROR") 
    pass
-    
-    
-    
-    
-#{'apiVersion': '1.45.0', 'flightControllerIdentifier': 'BTFL', 'flightControllerVersion': '4.4.3', 'version': 0, 'buildInfo': 'Nov 14 2023 16:10:10', 'multiType': 0, 'msp_version': 0, 'capability': 0, 'cycleTime': 313, 'i2cError': 0, 'activeSensors': 33, 'mode': 0, 'profile': 0, 'uid': [2883621, 808666896, 943206708], 'accelerometerTrims': [0, 0], 'name': '', 'displayName': 'JOE PILOT', 'numProfiles': 4, 'rateProfile': 0, 'boardType': 2, 'armingDisableCount': 26, 'armingDisableFlags': 0, 'armingDisabled': False, 'runawayTakeoffPreventionDisabled': False, 'boardIdentifier': 'S405', 'boardVersion': 0, 'commCapabilities': 55, 'targetName': 'STM32F405', 'boardName': 'SPEEDYBEEF405V3', 'manufacturerId': 'SPBE', 'signature': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'mcuTypeId': 1, 'mspProtocolVersion': 0, 'cpuload': 18, 'flightModeFlags': []}
-#['ADJUSTMENT_RANGES', 'ADVANCED_TUNING', 'ANALOG', 'ARMING_CONFIG', 'AUX_CONFIG', 'AUX_CONFIG_IDS', 'BATTERY_CONFIG', 'BATTERY_STATE', 'BAUD_RATES', 'BEEPER_CONFIG', 'BLACKBOX', 'BOARD_ALIGNMENT_CONFIG', 'COMPASS_CONFIG', 'CONFIG', 'CURRENT_METERS', 'CURRENT_METER_CONFIGS', 'DATAFLASH', 'FAILSAFE_CONFIG', 'FC_CONFIG', 'FEATURE_CONFIG', 'FILTER_CONFIG', 'GPS_CONFIG', 'GPS_DATA', 'GPS_RESCUE', 'INAV', 'JUMBO_FRAME_SIZE_LIMIT', 'MISC', 'MIXER_CONFIG', 'MODE_RANGES', 'MODE_RANGES_EXTRA', 'MOTOR_3D_CONFIG', 'MOTOR_CONFIG', 'MOTOR_DATA', 'MSPCodes', 'MSPCodes2Str', 'PID', 'PIDNAMES', 'PID_ADVANCED_CONFIG', 'PIDs', 'RC', 'RC_DEADBAND_CONFIG', 'RC_MAP', 'RC_TUNING', 'REBOOT_TYPES', 'RSSI_CONFIG', 'RXFAIL_CONFIG', 'RX_CONFIG', 'SDCARD', 'SENSOR_ALIGNMENT', 'SENSOR_CONFIG', 'SENSOR_DATA', 'SERIAL_CONFIG', 'SERIAL_PORT_FUNCTIONS', 'SERVO_CONFIG', 'SERVO_DATA', 'SIGNATURE_LENGTH', 'TRANSPONDER', 'VOLTAGE_METERS', 'VOLTAGE_METER_CONFIGS', '__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__enter__', '__eq__', '__exit__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_crc8_dvb_s2', 'armingDisableFlagNames_BF', 'armingDisableFlagNames_INAV', 'basic_info', 'bit_check', 'conn', 'connect', 'convert', 'dataHandler_init', 'fast_msp_rc_cmd', 'fast_read_altitude', 'fast_read_analog', 'fast_read_attitude', 'fast_read_imu', 'is_serial_open', 'process_MSP2_INAV_DEBUG', 'process_MSP2_PID', 'process_MSPV2_INAV_ANALOG', 'process_MSPV2_INAV_MISC', 'process_MSP_ACC_CALIBRATION', 'process_MSP_ACC_TRIM', 'process_MSP_ADJUSTMENT_RANGES', 'process_MSP_ADVANCED_CONFIG', 'process_MSP_ALTITUDE', 'process_MSP_ANALOG', 'process_MSP_API_VERSION', 'process_MSP_ARMING_CONFIG', 'process_MSP_ARMING_DISABLE', 'process_MSP_ATTITUDE', 'process_MSP_BATTERY_CONFIG', 'process_MSP_BATTERY_STATE', 'process_MSP_BEEPER_CONFIG', 'process_MSP_BLACKBOX_CONFIG', 'process_MSP_BOARD_ALIGNMENT_CONFIG', 'process_MSP_BOARD_INFO', 'process_MSP_BOXIDS', 'process_MSP_BOXNAMES', 'process_MSP_BUILD_INFO', 'process_MSP_CF_SERIAL_CONFIG', 'process_MSP_COMPASS_CONFIG', 'process_MSP_COMP_GPS', 'process_MSP_COPY_PROFILE', 'process_MSP_CURRENT_METERS', 'process_MSP_CURRENT_METER_CONFIG', 'process_MSP_DATAFLASH_ERASE', 'process_MSP_DATAFLASH_SUMMARY', 'process_MSP_DEBUG', 'process_MSP_EEPROM_WRITE', 'process_MSP_FAILSAFE_CONFIG', 'process_MSP_FC_VARIANT', 'process_MSP_FC_VERSION', 'process_MSP_FEATURE_CONFIG', 'process_MSP_FILTER_CONFIG', 'process_MSP_GPSSTATISTICS', 'process_MSP_GPS_CONFIG', 'process_MSP_GPS_RESCUE', 'process_MSP_GPS_SV_INFO', 'process_MSP_LOOP_TIME', 'process_MSP_MAG_CALIBRATION', 'process_MSP_MISC', 'process_MSP_MIXER_CONFIG', 'process_MSP_MODE_RANGES', 'process_MSP_MODE_RANGES_EXTRA', 'process_MSP_MOTOR', 'process_MSP_MOTOR_3D_CONFIG', 'process_MSP_MOTOR_CONFIG', 'process_MSP_NAME', 'process_MSP_OSD_CHAR_READ', 'process_MSP_OSD_CHAR_WRITE', 'process_MSP_OSD_CONFIG', 'process_MSP_PID', 'process_MSP_PIDNAMES', 'process_MSP_PID_ADVANCED', 'process_MSP_PID_CONTROLLER', 'process_MSP_RAW_GPS', 'process_MSP_RAW_IMU', 'process_MSP_RC', 'process_MSP_RC_DEADBAND', 'process_MSP_RC_TUNING', 'process_MSP_RESET_CONF', 'process_MSP_RSSI_CONFIG', 'process_MSP_RXFAIL_CONFIG', 'process_MSP_RX_CONFIG', 'process_MSP_RX_MAP', 'process_MSP_SDCARD_SUMMARY', 'process_MSP_SELECT_SETTING', 'process_MSP_SENSOR_ALIGNMENT', 'process_MSP_SENSOR_CONFIG', 'process_MSP_SERVO', 'process_MSP_SERVO_CONFIGURATIONS', 'process_MSP_SET_ACC_TRIM', 'process_MSP_SET_ADJUSTMENT_RANGE', 'process_MSP_SET_ADVANCED_CONFIG', 'process_MSP_SET_ARMING_CONFIG', 'process_MSP_SET_BEEPER_CONFIG', 'process_MSP_SET_BLACKBOX_CONFIG', 'process_MSP_SET_BOARD_ALIGNMENT_CONFIG', 'process_MSP_SET_CF_SERIAL_CONFIG', 'process_MSP_SET_CURRENT_METER_CONFIG', 'process_MSP_SET_FAILSAFE_CONFIG', 'process_MSP_SET_FEATURE_CONFIG', 'process_MSP_SET_FILTER_CONFIG', 'process_MSP_SET_GPS_CONFIG', 'process_MSP_SET_LOOP_TIME', 'process_MSP_SET_MIXER_CONFIG', 'process_MSP_SET_MODE_RANGE', 'process_MSP_SET_MOTOR', 'process_MSP_SET_MOTOR_3D_CONFIG', 'process_MSP_SET_MOTOR_CONFIG', 'process_MSP_SET_NAME', 'process_MSP_SET_OSD_CONFIG', 'process_MSP_SET_PID', 'process_MSP_SET_PID_ADVANCED', 'process_MSP_SET_PID_CONTROLLER', 'process_MSP_SET_RAW_RC', 'process_MSP_SET_RC_DEADBAND', 'process_MSP_SET_RC_TUNING', 'process_MSP_SET_REBOOT', 'process_MSP_SET_RESET_CURR_PID', 'process_MSP_SET_RSSI_CONFIG', 'process_MSP_SET_RTC', 'process_MSP_SET_RXFAIL_CONFIG', 'process_MSP_SET_RX_CONFIG', 'process_MSP_SET_RX_MAP', 'process_MSP_SET_SENSOR_ALIGNMENT', 'process_MSP_SET_SENSOR_CONFIG', 'process_MSP_SET_SERVO_CONFIGURATION', 'process_MSP_SET_TRANSPONDER_CONFIG', 'process_MSP_SET_VOLTAGE_METER_CONFIG', 'process_MSP_SET_VTX_CONFIG', 'process_MSP_SONAR', 'process_MSP_STATUS', 'process_MSP_STATUS_EX', 'process_MSP_UID', 'process_MSP_VOLTAGE_METERS', 'process_MSP_VOLTAGE_METER_CONFIG', 'process_MSP_VTX_CONFIG', 'process_armingDisableFlags', 'process_mode', 'process_recv_data', 'readbytes', 'reboot', 'receive_msg', 'receive_raw_msg', 'save2eprom', 'send_RAW_MOTORS', 'send_RAW_RC', 'send_RAW_msg', 'ser_trials', 'serialPortFunctionMaskToFunctions', 'serial_port_read_lock', 'serial_port_write_lock', 'set_ARMING_DISABLE', 'set_FEATURE_CONFIG', 'set_RX_MAP']
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
