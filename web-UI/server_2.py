@@ -17,24 +17,6 @@ from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 import numpy as np
 
-# video stream
-class VideoStreamWidget(object):
-    def __init__(self, src=0):
-        self.capture = cv2.VideoCapture(src)
-        # Start the thread to read frames from the video stream
-        self.thread = Thread(target=self.update, args=())
-        self.thread.daemon = True
-        self.thread.start()
-
-    def update(self):
-        # Read the next frame from the stream in a different thread
-        while True:
-            if self.capture.isOpened():
-                (self.status, self.frame) = self.capture.read()
-                self.img, self.obj_center, self.img_center = lib_start.process_img_server(self.frame)   
-            time.sleep(.01)
-    def get_frame(self):
-        return self.img, self.obj_center, self.img_center
 
 lib_start = tracker_lib.TrackerLib()
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
@@ -123,9 +105,16 @@ def value_limit(output, limit):
         return output 
 
 def keyboard_controller(screen, dict_):
-    Kp = 0.745136137394194487 /100#*20
-    Ki = 0.000022393195314520642 /100#*20
-    Kd = 7.404490165264038 /100#*60
+    # PID up 
+#    Kp = 0.745 #/100#*20
+#    Ki = 0.02 #/100#*20
+#    Kd = 7.404 #/100#*60
+
+
+    Kp = 0.002 
+    Ki = 0.000001 
+    Kd = 0.0#2
+    
     
     # Create a PID controller object throttle
     pid_throttle = PIDController(Kp, Ki, Kd) # throttle
@@ -211,7 +200,7 @@ def keyboard_controller(screen, dict_):
             local_fast_read_altitude = board.fast_read_altitude
             _filter_tof = FadingMemoryFilter([board.SENSOR_DATA['altitude'], 0.0, 0.0], 1/20, order=2, beta=0.8)
             my_filter = KalmanFilter(dim_x=2, dim_z=1)
-            
+            local_fast_msp_rc_cmd = board.fast_msp_rc_cmd
             prev_step_time = 0
             while True:
                 start_time = time.time()
@@ -224,8 +213,7 @@ def keyboard_controller(screen, dict_):
                 local_fast_read_imu() 
                 local_fast_read_attitude()
                 local_fast_read_altitude()
-                #board.SENSOR_DATA
-#                dict_["current_height"] = board.SENSOR_DATA['altitude']
+                #dict_["current_height"] = board.SENSOR_DATA['altitude']
                 _filter_tof.update(board.SENSOR_DATA['altitude'])
                 dict_["current_height"] = _filter_tof.x[0]
                 dict_["rotation"] = board.SENSOR_DATA['kinematics']     
@@ -243,6 +231,7 @@ def keyboard_controller(screen, dict_):
                 elif char == ord('d') or char == ord('D'):
                     cursor_msg = 'Sending Disarm command...'
                     CMDS['aux1'] = 1000
+                    CMDS['throttle'] = 1000
                     start_fly = False
                     start_track = False
 
@@ -290,7 +279,7 @@ def keyboard_controller(screen, dict_):
                     if board.send_RAW_RC([CMDS[ki] for ki in CMDS_ORDER]):
                         dataHandler = board.receive_msg()
                         board.process_recv_data(dataHandler)
-
+#                    local_fast_msp_rc_cmd([CMDS[ki] for ki in CMDS_ORDER])
                 
                 #
                 # SLOW MSG processing (user GUI)
@@ -428,7 +417,6 @@ def image_task(dict_):
     server_socket.listen(5)
     
     cap = cv2.VideoCapture(1)
-    # video_stream_widget = VideoStreamWidget()
     print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
     data = b""
@@ -438,7 +426,6 @@ def image_task(dict_):
         client_socket, addr = server_socket.accept()
         #print('Получено соединение от:', addr, client_socket)
         try:
-            # while(video_stream_widget.capture.isOpened()):
            while(cap.isOpened()):
 #                try:
                 (status, frame) = cap.read()
@@ -446,7 +433,6 @@ def image_task(dict_):
                     frame = cv2.resize(frame, (int(frame.shape[1]*1.4), int(frame.shape[0]*1.4)))
                     _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])  
                     # Сжатие кадра в формат JPEG
-                    # _img, obj_center, img_center = video_stream_widget.get_frame()
                     _, img = cv2.imencode('.jpg', _img, encode_param)
                     
                     dict_["y_current"] = img_center[0]
@@ -485,7 +471,7 @@ def image_task(dict_):
 
                     if state > 1:
                         if sum(bbox[-2:]) > 10:
-                            lib_start.init_tracker(_img, bbox)
+                            lib_start.init_tracker(_img, bbox, A = True, B = True)
                             lib_start.state = 0
                             init_tracker = True
 

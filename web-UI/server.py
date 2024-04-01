@@ -18,6 +18,9 @@ from threading import Thread
 class VideoStreamWidget(object):
     def __init__(self, src=0):
         self.capture = cv2.VideoCapture(src)
+        self.lib_start = tracker_lib.TrackerLib()
+        self.status = False
+        self.init_tracker = False
         # Start the thread to read frames from the video stream
         self.thread = Thread(target=self.update, args=())
         self.thread.daemon = True
@@ -28,12 +31,12 @@ class VideoStreamWidget(object):
         while True:
             if self.capture.isOpened():
                 (self.status, self.frame) = self.capture.read()
-                self.img, self.obj_center, self.img_center = lib_start.process_img_server(self.frame)   
-            time.sleep(.01)
-    def get_frame(self):
+                self.img, self.obj_center, self.img_center = self.lib_start.process_img_server(self.frame, self.init_tracker)   
+    def get_frame(self, D):
+        self.init_tracker = D
         return self.img, self.obj_center, self.img_center
 
-lib_start = tracker_lib.TrackerLib()
+
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 
 
@@ -356,9 +359,9 @@ def image_task(dict_):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     host_name = socket.gethostname()
-    #host_ip = socket.gethostbyname(host_name)
+    host_ip = socket.gethostbyname(host_name)
     #host_ip = '10.42.0.1'
-    host_ip = '192.168.1.123'
+    #host_ip = '192.168.1.123'
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -368,8 +371,8 @@ def image_task(dict_):
     # Ожидание подключения клиента
     server_socket.listen(5)
     print("Ожидание подключения клиента...")
-    cap = cv2.VideoCapture(1)
-    # video_stream_widget = VideoStreamWidget()
+#    cap = cv2.VideoCapture(1)
+    video_stream_widget = VideoStreamWidget(src=1)
 
     payload_size = struct.calcsize("Q")
     data = b""
@@ -379,15 +382,15 @@ def image_task(dict_):
         client_socket, addr = server_socket.accept()
         #print('Получено соединение от:', addr, client_socket)
         try:
-            # while(video_stream_widget.capture.isOpened()):
-           while(cap.isOpened()):
-#                try:
-                (status, frame) = cap.read()
-                if status:
-                    frame = cv2.resize(frame, (int(frame.shape[1]*1.4), int(frame.shape[0]*1.4)))
-                    _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])  
+             while(video_stream_widget.capture.isOpened()):
+                if video_stream_widget.status:
+#           while(cap.isOpened()):
+#                (status, frame) = cap.read()
+#                if status:
+#                    frame = cv2.resize(frame, (int(frame.shape[1]*1.4), int(frame.shape[0]*1.4)))
+#                    _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])  
                     # Сжатие кадра в формат JPEG
-                    # _img, obj_center, img_center = video_stream_widget.get_frame()
+                    _img, obj_center, img_center = video_stream_widget.get_frame(dict_["init_tracker"])
                     _, img = cv2.imencode('.jpg', _img, encode_param)
                     
                     dict_["y_current"] = img_center[0]
@@ -395,11 +398,7 @@ def image_task(dict_):
                     
                     dict_["y_target"] = obj_center[0]
                     dict_["z_target"] = obj_center[1]
-    #                except AttributeError:
-    #                    pass
                     num.value = obj_center[1]
-                    #time.sleep(0.04)
-                    #print (dict_, num.value)  
                     # отправка данных
                     a = pickle.dumps([img, init_tracker])
                     message = struct.pack("Q", len(a)) + a
@@ -426,11 +425,11 @@ def image_task(dict_):
 
                     if state > 1:
                         if sum(bbox[-2:]) > 10:
-                            lib_start.init_tracker(_img, bbox)
-                            lib_start.state = 0
+                            video_stream_widget.lib_start.init_tracker(_img, bbox, A = True, B = True)
+                            video_stream_widget.lib_start.state = 0
                             init_tracker = True
 
-                    lib_start.init_switch = init_switch
+                    video_stream_widget.lib_start.init_switch = init_switch
                     dict_["init_tracker"] = init_tracker
         except ConnectionResetError:
             print("Клиент отключился")
@@ -446,8 +445,8 @@ if __name__ == '__main__':
         dict_ = manager.dict()
         dict_["init_tracker"] = False
         # run the thread
-        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
-        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"  
+#        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
+#        thread1.start()   # "BP_FlyingPawn_11", "BP_FlyingPawn2_2"  
                 
         thread2 = Process(target=image_task, args=(dict_,), daemon=True)
         thread2.start() #"BP_FlyingPawn2_2"#"BP_FlyingPawn2_7"
