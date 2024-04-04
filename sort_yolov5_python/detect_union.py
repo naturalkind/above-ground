@@ -11,7 +11,7 @@ from multiprocessing import Process, Value, Array, Manager, Queue
 from threading import Thread
 from rknnpool import rknnPoolExecutor
 #Функция обработки изображений, вам необходимо изменить ее самостоятельно в процессе фактического применения
-from func import myFunc
+from func import myFunc2, draw2
 
 
 def cv_tracker(dict_, pipe, pipe2):
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     pool = rknnPoolExecutor(
         rknnModel=modelPath,
         TPEs=TPEs,
-        func=myFunc)
+        func=myFunc2)
 
     dict_ = Manager().dict()
     dict_["init_tracker"] = False
@@ -101,12 +101,16 @@ if __name__ == '__main__':
             break
         pool.put(frame)
         child_conn2.send(frame)
-        frame, flag = pool.get()
+        
+        boxes_yolo, flag = pool.get()
+        
         box = parent_conn.recv()  # Receive coordinates from csrt_tracker process
         if not dict_["state_2"]:
             img_center = lib_start.get_center(frame, 0, 0, frame.shape[1], frame.shape[0])
             lib_start.image_process(frame, box, img_center)        
-        
+   
+        if boxes_yolo is not None:
+            draw2(frame, boxes_yolo[:,:-1], boxes_yolo[:,-1])       
         end_time = time.time()
         seconds = end_time - start_time
         fps = 1.0 / seconds

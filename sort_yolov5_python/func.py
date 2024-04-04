@@ -243,3 +243,30 @@ def myFunc(rknn_lite, IMG):
 #        draw(IMG, boxes, scores, classes)
         draw2(IMG, trackers[:,:-1], trackers[:,-1])
     return IMG
+    
+    
+def myFunc2(rknn_lite, IMG):
+    IMG = cv2.cvtColor(IMG, cv2.COLOR_BGR2RGB)
+    # Пропорциональное масштабирование
+    # IMG = letterbox(IMG)
+    # Принудительное сокращение
+    IMG = cv2.resize(IMG, (IMG_SIZE, IMG_SIZE))
+    outputs = rknn_lite.inference(inputs=[IMG])
+
+    input0_data = outputs[0].reshape([3, -1]+list(outputs[0].shape[-2:]))
+    input1_data = outputs[1].reshape([3, -1]+list(outputs[1].shape[-2:]))
+    input2_data = outputs[2].reshape([3, -1]+list(outputs[2].shape[-2:]))
+
+    input_data = list()
+    input_data.append(np.transpose(input0_data, (2, 3, 0, 1)))
+    input_data.append(np.transpose(input1_data, (2, 3, 0, 1)))
+    input_data.append(np.transpose(input2_data, (2, 3, 0, 1)))
+
+    boxes, classes, scores = yolov5_post_process(input_data)
+    IMG = cv2.cvtColor(IMG, cv2.COLOR_RGB2BGR)
+    if boxes is not None:
+        result = np.append(boxes, scores.reshape(-1,1), axis=1)
+        trackers = mot_tracker.update(result)
+        return trackers
+    else:
+        boxes
