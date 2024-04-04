@@ -26,6 +26,7 @@ if (cap.isOpened()):
 
 frames, loopTime, initTime = 0, time.time(), time.time()
 while (cap.isOpened()):
+    start_time = time.time()
     frames += 1
     ret, frame = cap.read()
     if not ret:
@@ -34,6 +35,11 @@ while (cap.isOpened()):
     frame, flag = pool.get()
     if flag == False:
         break
+    end_time = time.time()
+    seconds = end_time - start_time
+    fps = 1.0 / seconds
+    
+    cv2.putText(frame, f"{int(fps)} fps", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,0,255),2) #cv2.FONT_HERSHEY_COMPLEX
     cv2.imshow('test', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
