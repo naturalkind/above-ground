@@ -16,6 +16,10 @@ from filterpy.memory import FadingMemoryFilter
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 import numpy as np
+from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
+from scipy.signal import argrelextrema
+import json
 
 
 lib_start = tracker_lib.TrackerLib()
@@ -107,30 +111,73 @@ def value_limit(output, limit):
 
 def keyboard_controller(screen, dict_):
     # PID up 
-#    Kp = 0.745 #/100#*20
-#    Ki = 0.02 #/100#*20
-#    Kd = 7.404 #/100#*60
+
+    # Kp_y = 0.0 
+    # Ki_y = 0.0 
+    # Kd_y = 0.0 
+
+    # Лучший 1
+    # Kp_y = -0.0012 
+    # Ki_y = -0.0000012 
+    # Kd_y = -0.028799709320068358
+
+    # Лучший 2
+    # Kp_y = -0.0012 
+    # Ki_y = -0.00012 
+    # Kd_y = -0.28799709320068358
+
+    # Лучший 3
+    Kp_y = -0.0012 
+    Ki_y = -0.00022 
+    Kd_y = -0.48799709320068358
+    # Create a PID controller object yaw 
+    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y) # throttle   
 
 
-    Kp = 0.002 
-    Ki = 0.000001 
-    Kd = 0.0#2
-    
-    
+
+    # дросель
+    # лучший 1
+    # Kp_z = 0.0014229999999999853
+    # Ki_z = 0.00015179783099688674 
+    # Kd_z = 0.3334910958051647
+
+    # лучший 5 4400Ah
+    # Kp_z = 0.0014#42
+    # Ki_z = 0.0002#5
+    # Kd_z = 0.3335
+
+    # # лучший 6  4400Ah
+    # Kp_z = 0.00014#42
+    # Ki_z = 0.00002#5
+    # Kd_z = 0.3335
+
+    # # лучший 7  4400Ah
+    # Kp_z = 0.00014#42
+    # Ki_z = 0.00002#5
+    # Kd_z = 0.37
+
+    # лучший 8  4400Ah
+    # Kp_z = 0.00074#42
+    # Ki_z = 0.000031#5
+    # Kd_z = 0.297
+
+
+    # лучший 5 5500Ah
+    Kp_z = 0.0005#42
+    Ki_z = 0.00005#5
+    Kd_z = 0.4435
+
+
+    # genetic PID
+    # Kp_z = 0.0048
+    # Ki_z = 0.00011
+    # Kd_z = 0.22
+
+
     # Create a PID controller object throttle
-    pid_throttle = PIDController(Kp, Ki, Kd) # throttle
-    pid_pitch = PIDController(Kp, Ki, Kd) 
-    
-    
-    
-    Kp = 0.745136137394194487 
-    Ki = 0.000022393195314520642 
-    Kd = 7.404490165264038
-#    Kp = 0.1
-#    Ki = 0.0
-#    Kd = 0.7    
-    
-    pid_roll = PIDController(Kp, Ki, Kd)
+    pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) # throttle   
+
+
     
     CMDS = {
             'roll':     1500,
@@ -200,14 +247,24 @@ def keyboard_controller(screen, dict_):
             local_fast_read_attitude = board.fast_read_attitude
             local_fast_read_imu = board.fast_read_imu
             local_fast_read_altitude = board.fast_read_altitude
-            _filter_tof = FadingMemoryFilter([board.SENSOR_DATA['altitude'], 0.0, 0.0], 1/20, order=2, beta=0.8)
-            my_filter = KalmanFilter(dim_x=2, dim_z=1)
             local_fast_msp_rc_cmd = board.fast_msp_rc_cmd
             prev_step_time = 0
+
+
+            # throtle
+            list_target_thr = []
+            list_rc_thr = []
+            list_time_thr = []
+            list_pid_thr = []
+
+            # yaw
+            list_target_yaw = []
+            list_rc_yaw = []
+            list_time_yaw = []
+            list_pid_yaw = []
+
             while True:
                 start_time = time.time()
-                dt = time.time() - prev_step_time
-                prev_step_time = time.time()
                 char = screen.getch() # get keypress
                 curses.flushinp() # flushes buffer
                 
@@ -215,10 +272,7 @@ def keyboard_controller(screen, dict_):
                 local_fast_read_imu() 
                 local_fast_read_attitude()
                 local_fast_read_altitude()
-                #dict_["current_height"] = board.SENSOR_DATA['altitude']
-                _filter_tof.update(board.SENSOR_DATA['altitude'])
-                dict_["current_height"] = _filter_tof.x[0]
-                dict_["rotation"] = board.SENSOR_DATA['kinematics']     
+   
                            
                 #
                 # Key input processing
@@ -237,6 +291,23 @@ def keyboard_controller(screen, dict_):
                     start_fly = False
                     start_track = False
 
+
+                    with open('data.json', 'w') as f:
+                        data = {"list_time_thr":list_time_thr, 
+                                "list_rc_thr":list_rc_thr, 
+                                "list_target_thr":list_target_thr,
+                                "list_pid_thr":list_pid_thr,
+
+                                "list_target_yaw":list_target_yaw,
+                                "list_rc_yaw":list_rc_yaw,
+                                "list_time_yaw":list_time_yaw,
+                                "list_pid_yaw":list_pid_yaw
+
+                                }
+                        json.dump(data, f)
+
+
+
                 elif char == ord('r') or char == ord('R'):
                     screen.addstr(3, 0, 'Sending Reboot command...')
                     screen.clrtoeol()
@@ -248,30 +319,26 @@ def keyboard_controller(screen, dict_):
                     cursor_msg = 'Sending Arm command...'
                     CMDS['aux3'] = 1500
                 elif char == 259:
-                    height += 0.1
-                    cursor_msg = f'Target altitude: {height}' 
+                    # Kp += 0.001
+                    # Create a PID controller object throttle
+                    # pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) # throttle
+
+                    # Yaw
+                    Kp_y += 0.001
+                    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y)
                 elif char == 258:
-                    height -= 0.1
-                    cursor_msg = f'Target altitude: {height}'
-                elif char == ord('s') or char == ord('S'):
-                    if ARMED:
-                        start_fly = True
-                        last_takeoff_altitude = 0.0
-                        cursor_msg = f'Start flight: {start_fly}'
+
+                    # Kp -= 0.001
+                    # Create a PID controller object throttle
+                    # pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) # throttle
+
+                    # Yaw
+                    Kp_y -= 0.001
+                    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y)
                 elif char == ord('z') or char == ord('Z'):
                     if ARMED:
                         start_track = True
-                        start_fly = False
-                        
-                        target_y = dict_["rotation"][-1]
-                        cursor_msg = f'Start track... {start_track}' 
-                        my_filter.x = np.array([[2.], [0.]])   
-                        my_filter.F = np.array([[1.,1.], [0.,1.]])    # state transition matrix
-
-                        my_filter.H = np.array([[1.,0.]])    # Measurement function
-                        my_filter.P *= 1000.                 # covariance matrix
-                        my_filter.R = 5                      # state uncertainty
-                        my_filter.Q = Q_discrete_white_noise(dim=2, dt=0.1, var=0.1) # process uncertainty
+                        CMDS['throttle'] = 1380
                 #
                 # IMPORTANT MESSAGES (CTRL_LOOP_TIME based)
                 #
@@ -287,48 +354,43 @@ def keyboard_controller(screen, dict_):
                 # SLOW MSG processing (user GUI)
                 #
 
-                
-#                
-                if start_fly: # KEY "S"
-                    pid_output_throttle = pid_throttle.update(dict_["current_height"], height)
-                    #cursor_msg = f', {CMDS["throttle"]}'
-                    cursor_msg = f'flight mode: True #### Trotle/PID/height -> {CMDS["throttle"]}/{pid_output_throttle}/{height}, #### {CMDS["throttle"] + pid_output_throttle}'
-                    if 1000 <= CMDS['throttle'] + pid_output_throttle  <= 1700:
-                        CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
 
                 if dict_["init_tracker"]: # KEY "Z"
-#                    if start_fly:
-#                        my_filter.predict()
-#                        my_filter.update(dict_["y_target"])
-#                        pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) # yaw
-#                        if 1000 <= CMDS['yaw'] + pid_output_roll <= 1850:
-#                            CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
-#                        cursor_msg = f'{CMDS["yaw"]}, {pid_output_roll}, {my_filter.x}, {dict_["y_target"]}'                          
-                
                     if start_track:
-##                        if start_fly == False:
-##                            pid_output_roll = pid_roll.update(target_y, dict_["rotation"][-1])
-##                            if 1000 <= CMDS['yaw']+ pid_output_roll <= 1850:
-##                                CMDS['yaw'] = CMDS['yaw'] + pid_output_roll
-##                            cursor_msg = f'Rotation ---- {target_y}, {dict_["rotation"][-1]}, {CMDS["yaw"]}, {pid_output_roll}'
+
+                        # Throttle
 
                         pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
-                        if 1000 <= CMDS['throttle']+pid_output_throttle <= 1700:
+                        if 1000 <= CMDS['throttle']+pid_output_throttle <= 1900:
                             CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
-                        #last_takeoff_altitude = 
-                        cursor_msg = f'Init tracker is True, {CMDS["throttle"]}, target pos: {dict_["z_target"]}, corrent: {dict_["z_current"]}, {pid_output_throttle}'
-                        
-                screen.addstr(5, 100, "Altitude: {}".format(dict_["current_height"]))
-                screen.clrtoeol()      
-                screen.addstr(6, 100, "Kinematics: {}".format(dict_["rotation"]))
-                screen.clrtoeol()   
-                screen.addstr(7, 100, "Start flight: {}".format(str(start_fly)), curses.A_BOLD)
-                screen.clrtoeol()  
-                screen.addstr(8, 100, "Target height: {}".format(str(height)), curses.A_BOLD)
-                screen.clrtoeol()  
-               
-                screen.addstr(8, 0, "init_tracker: {}".format(dict_["init_tracker"]))
-                screen.clrtoeol()                  
+                        list_target_thr.append(dict_["z_target"]-dict_["z_current"])
+                        list_rc_thr.append(CMDS['throttle'])
+                        list_pid_thr.append([Kp_z, Ki_z, Kd_z])
+
+
+                        # Yaw
+
+                        # CMDS['throttle'] = 1250
+                        pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"]) 
+                        CMDS['yaw'] = CMDS['yaw'] + pid_output_yaw
+                        list_target_yaw.append(dict_["y_target"]-dict_["y_current"])
+                        list_rc_yaw.append(CMDS['yaw'])
+                        list_pid_yaw.append([Kp_y, Ki_y, Kd_y])
+
+                        l_time = time.time()-start_time
+                        list_time_thr.append(l_time)
+                        list_time_yaw.append(l_time)
+
+
+                        cursor_msg = f'Init tracker is True, {CMDS["throttle"]}, target pos: {dict_["z_target"]}, corrent: {dict_["z_current"]}, {pid_output_throttle}, Target Kp: {Kp_z}'
+                        # cursor_msg = f'Init tracker is True, {CMDS["yaw"]}, target pos: {dict_["y_target"]}, corrent: {dict_["y_current"]}, {pid_output_yaw}, Target Kp_y: {Kp_y}'
+                    
+
+                        # pitch 
+                        #CMDS['pitch'] = 1800
+
+                screen.addstr(7, 100, "Start track: {}".format(str(start_track)), curses.A_BOLD)
+                screen.clrtoeol()                
                   
                 if (time.time()-last_slow_msg_time) >= SLOW_MSGS_LOOP_TIME:
                     last_slow_msg_time = time.time()

@@ -10,7 +10,7 @@ lib_start.create_win()
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_name = socket.gethostname()
 host_ip = socket.gethostbyname(host_name)
-#host_ip = '10.42.0.1'
+# host_ip = '10.42.0.1'
 #host_ip = '192.168.1.123'  # Адрес сервера
 port = 9999
 client_socket.connect((host_ip, port))

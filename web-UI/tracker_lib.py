@@ -18,6 +18,7 @@ class TrackerLib(object):
         self.last_bbox = [0, 0, 0, 0]
         self.Error_track = False
         self.dst = 0
+        self.obj_center = [0,0]
 
     # Функция для рисования прямоугольника-обработчик событий мыши
     def draw_rectangle(self, event, x, y, flags, userdata):
@@ -86,11 +87,11 @@ class TrackerLib(object):
     
 
     def image_process(self, img, bbox, img_center):
-        obj_center = self.draw_box(img, bbox)
-        x_dist = (obj_center[0] - img_center[0])**2
-        y_dist = (obj_center[1] - img_center[1])**2 
+        self.obj_center = self.draw_box(img, bbox)
+        x_dist = (self.obj_center[0] - img_center[0])**2
+        y_dist = (self.obj_center[1] - img_center[1])**2 
 
-        cv2.line(img, img_center, obj_center, (255,0,0), 4) 
+        cv2.line(img, img_center, self.obj_center, (255,0,0), 4) 
         cv2.putText(img, "{}".format(int(np.sqrt(x_dist + y_dist))), (bbox[0],bbox[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
 
         #img_center
@@ -214,7 +215,7 @@ class TrackerLib(object):
 
     def process_img_server(self, img, init_tracker):
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
-        obj_center = [0,0]
+        
         if self.init_switch == True or init_tracker == True:
             # Обновление трекера CSRT
             csrt_success, csrt_bbox = self.csrt_tracker.update(img)
@@ -247,7 +248,7 @@ class TrackerLib(object):
                 self.last_bbox = bbox
                 self.Error_track = "A"
         #self.state = 0
-        return img, obj_center, img_center
+        return img, self.obj_center, img_center
 
 
 if __name__ == "__main__":

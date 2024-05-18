@@ -64,7 +64,7 @@ def simulate_pid(params):
             'pitch':    1500,
             'throttle': 1000,
             'yaw':      1500,
-            'aux1':     1000, # DISARMED (1000) / ARMED (2000)
+            'aux1':     1500, # DISARMED (1000) / ARMED (2000)
             'aux2':     1000, # ANGLE (1000) / HORIZON (1500) / FLIP (1800)
             'aux3':     1000, # FAILSAFE (1800)
             'aux4':     1000  # HEADFREE (1800)
@@ -82,7 +82,7 @@ def simulate_pid(params):
 
     try:
         while not shutdown:
-            with MSPy(device="/dev/ttyACM0", loglevel='WARNING', baudrate=115200) as board:
+            with MSPy(device="COM5", loglevel='WARNING', baudrate=115200) as board:
                 if board == 1: # an error occurred...
                     print("Not connected to the FC...")              
                     continue
@@ -127,7 +127,7 @@ def simulate_pid(params):
                             prev_time = time.time()
                             ix += 1
                             if ix > 50:
-                                CMDS["aux1"] = 2000
+                                
                                 CMDS["aux3"] = 1500
                                 #init_tracker = True
                             if ARMED:
@@ -138,12 +138,12 @@ def simulate_pid(params):
                                     if 1000 <= CMDS['throttle'] + pid_output_throttle <= 1850:
                                         CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
                                     ix_output += 1
-                                if ix_output == 100:
+                                if ix_output == 2000:
                                     # Получение финальной позиции
                                     x_val = dict_["z_target"]
                                     y_val = dict_["y_target"] 
                                     print ("END...", np.sqrt(x_val**2 + y_val**2), ix)
-                                    CMDS["aux1"] = 1000
+                                    CMDS["aux3"] = 200
                                     CMDS_RC = [CMDS[ki] for ki in CMDS_ORDER]
                                     board.fast_msp_rc_cmd(CMDS_RC)
                                     return np.sqrt(x_val**2 + y_val**2),
@@ -161,9 +161,9 @@ def image_task(dict_):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     host_name = socket.gethostname()
-    #host_ip = socket.gethostbyname(host_name)
+    host_ip = socket.gethostbyname(host_name)
     #host_ip = '10.42.0.1'
-    host_ip = '192.168.1.123'
+    # host_ip = '192.168.1.123'
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -175,7 +175,7 @@ def image_task(dict_):
     
     lib_start = tracker_lib.TrackerLib()
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     # video_stream_widget = VideoStreamWidget()
     print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
@@ -227,7 +227,7 @@ def image_task(dict_):
 
                     if state > 1:
                         if sum(bbox[-2:]) > 10:
-                            lib_start.init_tracker(_img, bbox)
+                            lib_start.init_tracker(_img, bbox, A = True, B = True)
                             lib_start.state = 0
                             init_tracker = True
 
@@ -240,42 +240,44 @@ def image_task(dict_):
     # Close the server socket
     server_socket.close()
 
+if __name__ == '__main__':
 
-dict_ = Manager().dict()
-dict_["init_tracker"] = False
-thread2 = Process(target=image_task, args=(dict_,), daemon=True)
-thread2.start()
-#thread2.join() 
+    with Manager() as manager:
+        dict_ = manager.dict()
+        dict_["init_tracker"] = False
+        thread2 = Process(target=image_task, args=(dict_,), daemon=True)
+        thread2.start()
+        # thread2.join() 
 
-## Создание класса FitnessMin для минимизации функции приспособленности
-creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        # Создание класса FitnessMin для минимизации функции приспособленности
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 
-## Создание класса Individual с одним атрибутом, представляющим параметры PID
-creator.create("Individual", list, fitness=creator.FitnessMin)
+        ## Создание класса Individual с одним атрибутом, представляющим параметры PID
+        creator.create("Individual", list, fitness=creator.FitnessMin)
 
-## Определение функции для инициализации особи
-def init_individual():
-    return [np.random.uniform(0, 0.004) for _ in range(3)]  # Инициализация случайных значений для параметров PID
+        ## Определение функции для инициализации особи
+        def init_individual():
+            return [np.random.uniform(0, 0.004) for _ in range(3)]  # Инициализация случайных значений для параметров PID
 
-## Определение генетических операторов
-toolbox = base.Toolbox()
-toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-toolbox.register("evaluate", simulate_pid)
-toolbox.register("mate", tools.cxBlend, alpha=0.5)
-toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.2, indpb=0.2)
-toolbox.register("select", tools.selTournament, tournsize=3)
+        ## Определение генетических операторов
+        toolbox = base.Toolbox()
+        toolbox.register("individual", tools.initIterate, creator.Individual, init_individual)
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("evaluate", simulate_pid)
+        toolbox.register("mate", tools.cxBlend, alpha=0.5)
+        toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.2, indpb=0.2)
+        toolbox.register("select", tools.selTournament, tournsize=3)
 
-## Создание начальной популяции
-population = toolbox.population(n=10)
+        ## Создание начальной популяции
+        population = toolbox.population(n=10)
 
-## Запуск генетического алгоритма
-algorithms.eaMuPlusLambda(population, toolbox, mu=10, lambda_=20, cxpb=0.7, mutpb=0.3, ngen=10, stats=None, halloffame=None)
+        ## Запуск генетического алгоритма
+        algorithms.eaMuPlusLambda(population, toolbox, mu=10, lambda_=20, cxpb=0.7, mutpb=0.3, ngen=10, stats=None, halloffame=None)
 
-## Вывод лучшей особи
-best_individual = tools.selBest(population, k=1)[0]
-print("Best Individual:", best_individual)
-print("Best Fitness:", best_individual.fitness.values)
+        ## Вывод лучшей особи
+        best_individual = tools.selBest(population, k=1)[0]
+        print("Best Individual:", best_individual)
+        print("Best Fitness:", best_individual.fitness.values)
 
 #Best Individual: [0.0006422135466285553, 0.0016968316583189755, 5.241418595445369e-05]
     

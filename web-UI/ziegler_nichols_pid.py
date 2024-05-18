@@ -16,6 +16,9 @@ from threading import Thread
 import numpy as np
 from deap import base, creator, tools, algorithms
 from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
+from scipy.signal import argrelextrema
+import json
 
 class PIDController:
     def __init__(self, kp, ki, kd):
@@ -37,10 +40,14 @@ class PIDController:
 ## Функция для симуляции квадрокоптера с заданными параметрами PID
 def simulate_pid(dict_):
     # Задание параметров PID
-    Kp = 0.002 
-    Ki = 0.0002 
-    Kd = 0.0#2
-    
+    # Kp = 0.745136137394194487 
+    # Ki = 0.02
+    # Kd = 7.404490165264038
+    Kp = 0.03
+    Ki = 0.0
+    Kd = 0.0
+
+
 
     init_tracker = False
 
@@ -56,7 +63,7 @@ def simulate_pid(dict_):
             'pitch':    1500,
             'throttle': 1000,
             'yaw':      1500,
-            'aux1':     1000, # DISARMED (1000) / ARMED (2000)
+            'aux1':     1500, # DISARMED (1000) / ARMED (2000)
             'aux2':     1000, # ANGLE (1000) / HORIZON (1500) / FLIP (1800)
             'aux3':     1000, # FAILSAFE (1800)
             'aux4':     1000  # HEADFREE (1800)
@@ -74,9 +81,10 @@ def simulate_pid(dict_):
 
     list_target = []
     list_rc = []
+    list_time = []
 #    try:
     while not shutdown:
-        with MSPy(device="/dev/ttyACM0", loglevel='WARNING', baudrate=115200) as board:
+        with MSPy(device="COM5", loglevel='WARNING', baudrate=115200) as board:
             if board == 1: # an error occurred...
                 print("Not connected to the FC...")              
                 continue
@@ -89,6 +97,7 @@ def simulate_pid(dict_):
                     prev_time = time.time()
                     ix = 0
                     ix_output = 0
+                    l_time = 0
                     while not shutdown:
                         CMDS_RC = [CMDS[ki] for ki in CMDS_ORDER]
 
@@ -120,38 +129,69 @@ def simulate_pid(dict_):
                         
                         ix += 1
                         if ix > 50:
-                            CMDS["aux1"] = 2000
+                            # CMDS["aux1"] = 2000
                             CMDS["aux3"] = 1500
                             #init_tracker = True
+                        t_thr = 0
                         if ARMED:
                             if dict_["init_tracker"]:
                                 pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"]) 
 #                                pid_output_throttle = Kp * dict_["z_target"] +Ki * dict_["z_target"] + Kd * dict_["z_target"] 
                                 #print (CMDS['throttle'] + pid_output_throttle)    
-                                if 1000 <= CMDS['throttle'] + pid_output_throttle <= 1850:
-                                    CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
-                                list_target.append(dict_["z_target"])
+                                if 1000 <= CMDS['throttle'] + pid_output_throttle <= 1600:
+                                    CMDS['throttle'] = pid_output_throttle + CMDS['throttle'] 
+                                list_target.append(dict_["z_target"]-dict_["z_current"])
                                 list_rc.append(CMDS['throttle'])
-                                
-                        #if ix > 250:
-                            #time.sleep(100)
+                                l_time = time.time()-prev_time
+                                list_time.append(l_time)
+                                t_thr = pid_output_throttle
+
                         
-                        print(ARMED, board.process_mode(board.CONFIG['mode']), CMDS, (time.time()-prev_time))
+                        print(ARMED, board.process_mode(board.CONFIG['mode']), CMDS, t_thr, l_time)
                         prev_time = time.time()
                 except KeyboardInterrupt:
-                    shutdown = True
-#    finally:
-#        print("FINISHED")
-#        simulate_pid(dict_)
+                    print ("shutdown")
+                    shutdown = True   
+                finally:
+                    sumOfNums = sum(list_time)
+                    count = len(list_time)
+                    average = sumOfNums / count
+                    list_time_arr = np.arange(0, count)#np.array(list_time)
+
+                    sum_lisg_rc = sum(list_rc)
+                    average_rc = sum_lisg_rc/count
+
+                    list_rc_arr = np.array(list_rc)
+                    ix_max = argrelextrema(list_rc_arr, np.greater)
+                    ix_min = argrelextrema(list_rc_arr, np.less)
+                    print("FINISHED", len(list_target), average, f"time: {sumOfNums}", ix_max)
+                    
+                    with open('data.json', 'w') as f:
+                        data = {"list_time":list_time, "list_rc":list_rc}
+                        json.dump(data, f)
+
+
+                    plt.scatter(list_time_arr[ix_max], list_rc_arr[ix_max])
+                    plt.scatter(list_time_arr[ix_min], list_rc_arr[ix_min])
+                    plt.plot(list_rc)
+                    plt.axline((0, average_rc), (count, average_rc))
+                    plt.title('PID')
+                    plt.xlabel('step')
+                    plt.ylabel('throttle')
+                    plt.show()
+
+                    
+
+                   
 
 def image_task(dict_):
     # Создание сокета
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     host_name = socket.gethostname()
-    #host_ip = socket.gethostbyname(host_name)
+    host_ip = socket.gethostbyname(host_name)
     #host_ip = '10.42.0.1'
-    host_ip = '192.168.1.123'
+    # host_ip = '192.168.1.123'
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -163,7 +203,7 @@ def image_task(dict_):
     
     lib_start = tracker_lib.TrackerLib()
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     # video_stream_widget = VideoStreamWidget()
     print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
@@ -215,7 +255,7 @@ def image_task(dict_):
 
                     if state > 1:
                         if sum(bbox[-2:]) > 10:
-                            lib_start.init_tracker(_img, bbox)
+                            lib_start.init_tracker(_img, bbox, A = True, B = True)
                             lib_start.state = 0
                             init_tracker = True
 
@@ -243,6 +283,7 @@ if __name__ == '__main__':
         
         # wait for the thread to finish
         print('Waiting for the thread...')
+        thread1.join() 
         thread2.join()    
     
     
