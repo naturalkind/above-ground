@@ -45,8 +45,8 @@ NO_OF_CYCLES_AVERAGE_GUI_TIME = 10
 # https://pyserial.readthedocs.io/en/latest/shortintro.html
 #
 #
-# SERIAL_PORT = "/dev/ttyACM0"
-SERIAL_PORT = "COM5"
+SERIAL_PORT = "/dev/ttyACM0"
+#SERIAL_PORT = "COM5"
 
 """
 Этот код создает экземпляр PID-регулятора с определенными коэффициентами Kp, Ki и Kd. 
@@ -55,7 +55,6 @@ SERIAL_PORT = "COM5"
 PID-регулятор и применяет получившийся управляющий сигнал к функции moveByRC
 
 """
-
 class PIDController:
     def __init__(self, kp, ki, kd):
         self.kp = kp
@@ -186,14 +185,15 @@ def keyboard_controller(screen, dict_):
             'yaw':      1500,
             'aux1':     1500,
             'aux2':     1000,
-            'aux3':     1000
+            'aux3':     1000,
+            'aux4':     1000
             }
 
     # This order is the important bit: it will depend on how your flight controller is configured.
     # Below it is considering the flight controller is set to use AETR.
     # The names here don't really matter, they just need to match what is used for the CMDS dictionary.
     # In the documentation, iNAV uses CH5, CH6, etc while Betaflight goes aux2, aux3...
-    CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2', 'aux3']
+    CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2', 'aux3', 'aux4']
     start_fly = False
     start_track = False
     height = 0.0
@@ -238,8 +238,9 @@ def keyboard_controller(screen, dict_):
             screen.addstr(16, 0, "flightControllerVersion: {}".format(board.CONFIG['flightControllerVersion']))
             screen.addstr(16, 50, "boardIdentifier: {}".format(board.CONFIG['boardIdentifier']))
             screen.addstr(17, 0, "boardName: {}".format(board.CONFIG['boardName']))
-
-            slow_msgs = cycle(['MSP_ANALOG', 'MSP_STATUS_EX', 'MSP_MOTOR', 'MSP_RC'])
+            
+            slow_msgs = cycle(['MSP_ANALOG', 'MSP_STATUS_EX', 'MSP_MOTOR', 'MSP_RC', 'MSP_RX_MAP', 
+                               'MSP_FEATURE_CONFIG'])
 
             cursor_msg = ""
             last_loop_time = last_slow_msg_time = last_cycleTime = time.time()
@@ -263,6 +264,9 @@ def keyboard_controller(screen, dict_):
             list_time_yaw = []
             list_pid_yaw = []
 
+
+
+            
             while True:
                 start_time = time.time()
                 char = screen.getch() # get keypress
@@ -286,7 +290,7 @@ def keyboard_controller(screen, dict_):
 
                 elif char == ord('d') or char == ord('D'):
                     cursor_msg = 'Sending Disarm command...'
-                    CMDS['aux3'] = 1000
+                    CMDS['aux2'] = 1000
                     CMDS['throttle'] = 1000
                     start_fly = False
                     start_track = False
@@ -314,10 +318,14 @@ def keyboard_controller(screen, dict_):
                     board.reboot()
                     time.sleep(0.5)
                     break
-
+                    
+                elif char == ord('w') or char == ord('W'):
+                    CMDS['throttle'] = CMDS['throttle'] + 10 if CMDS['throttle'] + 10 <= 2000 else CMDS['throttle']
+                    cursor_msg = 'W Key - throttle(+):{}'.format(CMDS['throttle'])
+                    
                 elif char == ord('a') or char == ord('A'):
                     cursor_msg = 'Sending Arm command...'
-                    CMDS['aux3'] = 1500
+                    CMDS['aux2'] = 1500
                 elif char == 259:
                     # Kp += 0.001
                     # Create a PID controller object throttle
@@ -336,9 +344,39 @@ def keyboard_controller(screen, dict_):
                     Kp_y -= 0.001
                     pid_yaw = PIDController(Kp_y, Ki_y, Kd_y)
                 elif char == ord('z') or char == ord('Z'):
-                    if ARMED:
-                        start_track = True
-                        CMDS['throttle'] = 1380
+                    local_fast_msp_rc_cmd([CMDS[ki] for ki in CMDS_ORDER])
+#                    pass
+#                    board.set_RX_MAP([255, 255, 255, 255, 255, 0, 255, 255])
+                    #[1500, 1497, 1500, 988, 988, 988, 988, 988, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500]
+                    # ARM MAP
+                    #[1500, 1497, 1500, 988, 988, 1500, 988, 988, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500]
+                    # Отключение пульта
+#                    board.CONFIG['armingDisabled'] = True
+#                    board.CONFIG['runawayTakeoffPreventionDisabled'] = True
+#                    board.set_ARMING_DISABLE(board.CONFIG['armingDisabled'], board.CONFIG['runawayTakeoffPreventionDisabled'])
+
+                    # WORK !!! Управление двигателями принудительно
+#                    board.send_RAW_MOTORS(data = [1100, 1100, 1100, 1100, 0, 0, 0, 0])
+
+#                    MSP_SET_RX_CONFIG : 45
+#                     board.send_RAW_msg(45, data=bytearray([0]))
+
+                elif char == ord('x') or char == ord('X'):
+                    #board.set_RX_MAP([0, 1, 2, 3, 4, 5, 6, 7]) # [0, 1, 2, 3, 4, 255, 6, 7]
+    
+                    pass
+#                    board.CONFIG['armingDisabled'] = False
+#                    board.CONFIG['runawayTakeoffPreventionDisabled'] = False
+#                    board.set_ARMING_DISABLE(board.CONFIG['armingDisabled'], board.CONFIG['runawayTakeoffPreventionDisabled']) 
+                    # WORK !!! Управление двигателями принудительно
+#                    board.send_RAW_MOTORS(data = [0, 0, 0, 0, 0, 0, 0, 0])
+                    
+
+#                    if ARMED:
+#                        start_track = True
+#                        CMDS['throttle'] = 1380
+#                        board.FEATURE_CONFIG["features"][3]["enabled"] = True
+
                 #
                 # IMPORTANT MESSAGES (CTRL_LOOP_TIME based)
                 #
@@ -348,8 +386,9 @@ def keyboard_controller(screen, dict_):
                     if board.send_RAW_RC([CMDS[ki] for ki in CMDS_ORDER]):
                         dataHandler = board.receive_msg()
                         board.process_recv_data(dataHandler)
+
+                    # Работает
 #                    local_fast_msp_rc_cmd([CMDS[ki] for ki in CMDS_ORDER])
-                
                 #
                 # SLOW MSG processing (user GUI)
                 #
@@ -427,8 +466,8 @@ def keyboard_controller(screen, dict_):
 
                         screen.addstr(6, 0, "cpuload: {}".format(board.CONFIG['cpuload']))
                         screen.clrtoeol()
-                        screen.addstr(6, 50, "cycleTime: {}".format(board.CONFIG['cycleTime']))
-                        screen.clrtoeol()
+#                        screen.addstr(6, 50, "cycleTime: {}".format(board.CONFIG['cycleTime']))
+#                        screen.clrtoeol()
 
                         screen.addstr(7, 0, "mode: {}".format(board.CONFIG['mode']))
                         screen.clrtoeol()
@@ -441,16 +480,24 @@ def keyboard_controller(screen, dict_):
 
                     elif next_msg == 'MSP_RC':
                         screen.addstr(20, 0, "RC Channels Values: {}".format(board.RC['channels']))
+                        screen.addstr(21, 0, "RC Channels Client: {}".format([CMDS[ki] for ki in CMDS_ORDER]))
+
+                    elif next_msg == 'MSP_FEATURE_CONFIG':
+                        screen.addstr(22, 0, "C: {}".format(board.FEATURE_CONFIG['features'][3])) 
+                        screen.addstr(23, 0, "C: {}".format(board.FEATURE_CONFIG['features'][14])) 
                         screen.clrtoeol()
-                        
+#                    elif next_msg == 'MSP_CF_SERIAL_CONFIG':
+#                        screen.addstr(23, 0, "RMSP_CF_SERIAL_CONFIG: {}".format(board.SERIAL_CONFIG['ports'])) 
+#                        screen.clrtoeol()
+#                      
                     screen.addstr(17, 50, "GUI cycleTime: {0:2.2f}ms (average {1:2.2f}Hz)".format((last_cycleTime)*1000,
                                   (sum(average_cycle)/len(average_cycle))))
                     screen.clrtoeol()
-
+                                                                            
                     screen.addstr(3, 0, cursor_msg)
                     screen.clrtoeol()
                     
-
+                    
                 end_time = time.time()
                 last_cycleTime = end_time-start_time
                 if (end_time-start_time)<CTRL_LOOP_TIME:
@@ -480,6 +527,9 @@ def image_task(dict_):
     # Ожидание подключения клиента
     server_socket.listen(5)
     
+    
+#    k_scale = 1.4
+    k_scale = 0.8
     cap = cv2.VideoCapture(0)
     print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
@@ -494,7 +544,7 @@ def image_task(dict_):
 #                try:
                 (status, frame) = cap.read()
                 if status:
-                    frame = cv2.resize(frame, (int(frame.shape[1]*1.4), int(frame.shape[0]*1.4)))
+                    frame = cv2.resize(frame, (int(frame.shape[1]*k_scale), int(frame.shape[0]*k_scale)))
                     _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])  
                     # Сжатие кадра в формат JPEG
                     _, img = cv2.imencode('.jpg', _img, encode_param)
@@ -566,7 +616,8 @@ if __name__ == '__main__':
         thread1.join()  
         thread2.join()    
         
-        
+#SOFTSERIAL TELEMETRY RX_MSP OSD AIRMODE ESC_SENSOR ANTI_GRAVITY  
+#RX_SERIAL SOFTSERIAL TELEMETRY OSD AIRMODE ESC_SENSOR ANTI_GRAVITY    
 """
 1 запускать автоматически 
 2 при нажатии армить

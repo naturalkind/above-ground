@@ -1,4 +1,4 @@
-airsim==1.8.1
+numpy==1.23.1
 contourpy==1.0.7
 cycler==0.11.0
 deap==1.4.1
@@ -8,7 +8,6 @@ kiwisolver==1.4.4
 matplotlib==3.7.1
 msgpack-python==0.5.6
 msgpack-rpc-python==0.4.1
-numpy==1.23.1
 opencv-contrib-python==4.9.0.80
 opencv-python==4.9.0.80
 packaging==23.1
@@ -20,4 +19,5 @@ scipy==1.10.1
 six==1.16.0
 tornado==4.5.3
 zipp==3.15.0
+
 git+https://github.com/thecognifly/YAMSPy.git
