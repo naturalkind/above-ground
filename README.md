@@ -33,9 +33,11 @@ python3 glue_part.py
 - [x] установить gazebo   
 - [x] установить airsim   
 - [ ] подключить к симуляторам px4/контроллер   
-- [ ] получать сигналы контроллера https://github.com/Microsoft/AirSim/issues/1726   
+- [x] получать сигналы контроллера https://github.com/Microsoft/AirSim/issues/1726   
 - [x] изучить возможность применения blender   
 - [ ] реализовать статью Mapping, Localization and Path Planning for Image-based Navigation using Visual Features and Map   
 - [ ] обучение с подкреплением   
 - [ ] удобный инструмент фотограметрии по одному изображениею местности (разрезать на куски исходное изображение для каждого куска создать несколько ракурсов)
 - [x] получить данные с пульта управления в airsim
+- [x] отслеживание обьекта
+- [x] PID регулятор

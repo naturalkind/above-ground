@@ -45,6 +45,46 @@ while True:
             
     fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)    
     cv2.putText(img, f"{int(fps)} fps", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,0,255),2)
+    
+    # прицел
+    size_box = 70
+    line_box = 2
+    shape_image = img.shape
+    
+    size_0 = int(shape_image[0]/2+size_box)
+    size_1 = int(shape_image[0]/2-size_box)
+    
+    size_2 = int(shape_image[1]/2+size_box)
+    size_3 = int(shape_image[1]/2-size_box)
+    
+    # Прямоугольник
+#    img[size_0:size_0+line_box,size_2-(size_box*2):size_2,:] = [1,152,117]
+#    img[size_0-(size_box*2):size_0, size_2:size_2+line_box,:] = [1,152,117]
+#    img[size_1:size_1+line_box, size_3:size_3+(size_box*2),:] = [1,152,117]
+#    img[size_0-(size_box*2):size_0, size_3:size_3+line_box,:] = [1,152,117]
+
+    # левый верхний угол
+    img[size_1:size_1+line_box, size_3:size_3+20,:] = [1,152,117]
+    img[size_0-(size_box*2):size_0-(size_box*2)+20, size_3:size_3+line_box,:] = [1,152,117]
+    
+    
+    # правый верхний угол
+    img[size_0-(size_box*2):size_0-(size_box*2)+20, size_2:size_2+line_box,:] = [1,152,117]
+    img[size_1:size_1+line_box, size_3+(size_box*2)-20:size_3+(size_box*2),:] = [1,152,117]
+    
+    # правый нижний угол
+    img[size_0-20:size_0, size_2:size_2+line_box,:] = [1,152,117]
+    img[size_0:size_0+line_box, size_2-20:size_2,:] = [1,152,117]
+    
+    # левый нижний угол
+    img[size_0:size_0+line_box, size_2-(size_box*2):size_2-(size_box*2)+20,:] = [1,152,117]
+    img[size_0-20:size_0, size_3:size_3+line_box,:] = [1,152,117]
+    
+    
+#    img[size_0:size_0+line_box, size_2-(size_box*2):size_2-(size_box*2),:] = [1,152,117]
+   
+#    img[size_0-(size_box*2):size_0-(size_box*2)+20, size_3:size_3+line_box,:] = [1,152,117]
+    
     # визуализация
     cv2.imshow("win", img)
     if cv2.waitKey(1) & 0xff == ord('q'):
