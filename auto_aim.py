@@ -12,7 +12,7 @@ import curses
 import socket
 import pickle
 import struct
-from interface import tracker_lib
+from tracker_lib import tracker_lib
 from multiprocessing import Process, Value, Array, Manager
 from collections import deque
 from itertools import cycle
@@ -229,8 +229,7 @@ def keyboard_controller(screen, dict_):
             local_fast_read_altitude = board.fast_read_altitude
             local_fast_msp_rc_cmd = board.fast_msp_rc_cmd
             prev_step_time = 0
-
-
+            
             # throttle
             list_target_thr = []
             list_rc_thr = []
@@ -452,6 +451,13 @@ def keyboard_controller(screen, dict_):
                         screen.clrtoeol()
 
                     elif next_msg == 'MSP_RC':
+                        if board.RC['channels'][7] == 2011:
+                            # зафиксировать обьект
+                            dict_["controller_init_tracker"] = True
+                        else:
+                            # открепить обьект
+                            dict_["controller_init_tracker"] = False
+                            
                         screen.addstr(20, 0, "RC Channels Values: {}".format(board.RC['channels']))
                         screen.addstr(21, 0, f"RC Channels Client: {[CMDS[ki] for ki in CMDS_ORDER]}")
                         screen.clrtoeol()
@@ -505,6 +511,8 @@ def image_task(dict_):
     data = b""
     init_tracker = False
     client_socket = False
+    size_box = 70
+    pressed_activate_key_track = 0
     while True:
         client_socket, addr = server_socket.accept()
         #print('Получено соединение от:', addr, client_socket)
@@ -515,6 +523,11 @@ def image_task(dict_):
                 if status:
                     frame = cv2.resize(frame, (int(frame.shape[1]*k_scale), int(frame.shape[0]*k_scale)))
                     _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])  
+
+                    area_OIU = [img_center[0]-size_box, img_center[1]-size_box, img_center[0]+size_box, img_center[1]+size_box]
+                    area_OIU = [int(d) for d in area_OIU]
+                    bbox_OIU = [area_OIU[0], area_OIU[1], area_OIU[2]-area_OIU[0], area_OIU[3]-area_OIU[1]]
+                    
                     # Сжатие кадра в формат JPEG
                     _, img = cv2.imencode('.jpg', _img, encode_param)
                     
@@ -554,7 +567,17 @@ def image_task(dict_):
                             lib_start.init_tracker(_img, bbox, A = True, B = True)
                             lib_start.state = 0
                             init_tracker = True
-
+                            
+                    if dict_["controller_init_tracker"]:
+                        pressed_activate_key_track += 1
+                        if pressed_activate_key_track == 1:
+                            lib_start.init_tracker(_img, bbox_OIU, A = True, B = True)
+                            init_tracker = True
+                    else:
+                        pressed_activate_key_track = 0
+                        lib_start.init_tracker(_img, bbox_OIU, A = True, B = True)
+                        init_tracker = False
+                        
                     lib_start.init_switch = init_switch
                     dict_["init_tracker"] = init_tracker
         except ConnectionResetError:
@@ -570,16 +593,17 @@ if __name__ == '__main__':
     with Manager() as manager:
         dict_ = manager.dict()
         dict_["init_tracker"] = False
+        dict_["controller_init_tracker"] = False
         # run the thread
-#        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
-#        thread1.start() 
+        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
+        thread1.start() 
                 
         thread2 = Process(target=image_task, args=(dict_,), daemon=True)
         thread2.start() 
         
         # wait for the thread to finish
         print('Waiting for the thread...')
-#        thread1.join()  
+        thread1.join()  
         thread2.join()    
         
 
