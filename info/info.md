@@ -224,6 +224,15 @@
 * https://arxiv.org/pdf/1705.02550.pdf
 * https://github.innominds.com/ZJU-FAST-Lab/Fast-Racing
 
+#### Betaflight
+* https://github.com/betaflight/betaflight/pull/13380/
+* https://github.com/betaflight/betaflight/issues/13374
+* https://github.com/betaflight/betaflight/pull/9915
+* https://github.com/betaflight/betaflight/pull/12848
+* https://github.com/betaflight/betaflight/issues/12790
+* https://github.com/betaflight/betaflight/issues/8292
+* https://github.com/AscendNTNU/msp_flightcontroller_interface
+
 
 #### Интересно
 * https://habr.com/ru/articles/650013/

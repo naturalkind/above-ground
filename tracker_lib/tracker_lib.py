@@ -249,6 +249,8 @@ class TrackerLib(object):
                 self.Error_track = "A"
             # yolo мультипоточность 
             # получать сдесь
+            
+            
         #self.state = 0
         return img, self.obj_center, img_center
 

@@ -229,6 +229,7 @@ def keyboard_controller(screen, dict_):
             local_fast_read_altitude = board.fast_read_altitude
             local_fast_msp_rc_cmd = board.fast_msp_rc_cmd
             prev_step_time = 0
+            last_channels = []
             
             # throttle
             list_target_thr = []
@@ -347,6 +348,11 @@ def keyboard_controller(screen, dict_):
                 if ARMED:
                     if autopilot:
                         if dict_["init_tracker"]: # KEY "Z"
+                            if dict_["controller_init_tracker"]:
+                                CMDS['throttle'] = last_channels[3]
+                                CMDS['yaw'] = last_channels[2]
+                                CMDS['pitch'] = last_channels[1]
+                                CMDS['roll'] = last_channels[0]
                             # throttle
                             
                             pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
@@ -439,12 +445,13 @@ def keyboard_controller(screen, dict_):
                         screen.clrtoeol()
                         mode = board.process_mode(board.CONFIG['mode'])
                         if 'MSP OVERRIDE' in mode:
-#                            CMDS['aux1'] = 1500
                             screen.addstr(7, 50, "Autopilot ON Flight Mode: {}".format(mode))
                             autopilot = True
+                            CMDS['aux2'] = 1500
                         else:
                             screen.addstr(7, 50, "Autopilot OFF Flight Mode: {}".format(mode))
                             autopilot = False
+                            
                         screen.clrtoeol()
                     elif next_msg == 'MSP_MOTOR':
                         screen.addstr(19, 0, "Motor Values: {}".format(board.MOTOR_DATA))
@@ -457,7 +464,8 @@ def keyboard_controller(screen, dict_):
                         else:
                             # открепить обьект
                             dict_["controller_init_tracker"] = False
-                            
+                        if autopilot == False:    
+                            last_channels = board.RC['channels']    
                         screen.addstr(20, 0, "RC Channels Values: {}".format(board.RC['channels']))
                         screen.addstr(21, 0, f"RC Channels Client: {[CMDS[ki] for ki in CMDS_ORDER]}")
                         screen.clrtoeol()
@@ -574,10 +582,9 @@ def image_task(dict_):
                             lib_start.init_tracker(_img, bbox_OIU, A = True, B = True)
                             init_tracker = True
                     else:
-                        pressed_activate_key_track = 0
-                        lib_start.init_tracker(_img, bbox_OIU, A = True, B = True)
-                        init_tracker = False
-                        
+                        if pressed_activate_key_track > 2:
+                            pressed_activate_key_track = 0
+                            init_tracker = False
                     lib_start.init_switch = init_switch
                     dict_["init_tracker"] = init_tracker
         except ConnectionResetError:

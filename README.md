@@ -19,6 +19,22 @@ python3 main.py
 python3 glue_part.py
 ```
 
+### Настройки betaflight
+```
+set msp_override_channels_mask = 111
+set msp_override_failsafe = ON
+```
+
+### Запуск программы aim
+- сервер
+```
+python auto_aim.py 
+```
+- клиент
+```
+python interface/client.py
+```
+
 + [Собранная информацияь по теме](https://github.com/naturalkind/above-ground/blob/main/info/info.md)
 + [Собранная информацияь по unreal/blender](https://github.com/naturalkind/above-ground/blob/main/info/game.md)
 
@@ -32,7 +48,7 @@ python3 glue_part.py
 - [x] графф для сортировки изображений в нужной последовательности   
 - [x] установить gazebo   
 - [x] установить airsim   
-- [ ] подключить к симуляторам px4/контроллер   
+- [ ] подключить к симуляторам px4/betaflight контроллер   
 - [x] получать сигналы контроллера https://github.com/Microsoft/AirSim/issues/1726   
 - [x] изучить возможность применения blender   
 - [ ] реализовать статью Mapping, Localization and Path Planning for Image-based Navigation using Visual Features and Map   
