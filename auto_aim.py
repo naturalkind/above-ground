@@ -176,7 +176,6 @@ def keyboard_controller(screen, dict_):
     # The names here don't really matter, they just need to match what is used for the CMDS dictionary.
     # In the documentation, iNAV uses CH5, CH6, etc while Betaflight goes aux2, aux3...
     CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2', 'aux3', 'aux4']
-    start_track = False
     autopilot = False
     ARMED = False
     height = 0.0
@@ -345,55 +344,49 @@ def keyboard_controller(screen, dict_):
                 #
                 # SLOW MSG processing (user GUI)
                 #
-                if ARMED:
-                    if autopilot:
-                        if dict_["init_tracker"]: # KEY "Z"
-                            if dict_["controller_init_tracker"]:
-                                CMDS['throttle'] = last_channels[3]
-                                CMDS['yaw'] = last_channels[2]
-                                CMDS['pitch'] = last_channels[1]
-                                CMDS['roll'] = last_channels[0]
-                            # throttle
-                            
-                            pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
-                            if 1000 <= CMDS['throttle']+pid_output_throttle <= 1900:
-                                CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
-                            list_target_thr.append(dict_["z_target"]-dict_["z_current"])
-                            list_rc_thr.append(CMDS['throttle'])
-                            list_pid_thr.append([Kp_z, Ki_z, Kd_z])
-
-
-                            # yaw
-
-                            # CMDS['throttle'] = 1250 
-                            pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"]) 
-                            CMDS['yaw'] = CMDS['yaw'] + pid_output_yaw
-                            list_target_yaw.append(dict_["y_target"]-dict_["y_current"])
-                            list_rc_yaw.append(CMDS['yaw'])
-                            list_pid_yaw.append([Kp_y, Ki_y, Kd_y])
-
-                            # roll
-
-                            pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) 
-                            #CMDS['roll'] = CMDS['roll'] + pid_output_roll
-                            list_target_roll.append(dict_["y_target"]-dict_["y_current"])
-                            list_rc_roll.append(CMDS['yaw'])
-                            list_pid_roll.append([Kp_y, Ki_y, Kd_y])
-
-
-                            # time
-                            l_time = time.time()-start_time
-                            list_time.append(l_time)
-
-
-                            cursor_msg = f'Init tracker is True, {CMDS["throttle"]}, target pos: {dict_["z_target"]}, corrent: {dict_["z_current"]}, {pid_output_throttle}, Target Kp: {Kp_z}'
-                            # cursor_msg = f'Init tracker is True, {CMDS["yaw"]}, target pos: {dict_["y_target"]}, corrent: {dict_["y_current"]}, {pid_output_yaw}, Target Kp_y: {Kp_y}'
+                if ARMED == autopilot == dict_["init_tracker"] == True:
                         
+                    # throttle
+                    
+                    pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
+                    if 1000 <= CMDS['throttle']+pid_output_throttle <= 1900:
+                        CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
+                    list_target_thr.append(dict_["z_target"]-dict_["z_current"])
+                    list_rc_thr.append(CMDS['throttle'])
+                    list_pid_thr.append([Kp_z, Ki_z, Kd_z])
 
-                            # pitch 
-                            #CMDS['pitch'] = 1700
 
-                screen.addstr(7, 100, "Start track: {}".format(str(autopilot)), curses.A_BOLD)
+                    # yaw
+
+                    # CMDS['throttle'] = 1250 
+                    pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"]) 
+                    CMDS['yaw'] = CMDS['yaw'] + pid_output_yaw
+                    list_target_yaw.append(dict_["y_target"]-dict_["y_current"])
+                    list_rc_yaw.append(CMDS['yaw'])
+                    list_pid_yaw.append([Kp_y, Ki_y, Kd_y])
+
+                    # roll
+
+                    pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) 
+                    #CMDS['roll'] = CMDS['roll'] + pid_output_roll
+                    list_target_roll.append(dict_["y_target"]-dict_["y_current"])
+                    list_rc_roll.append(CMDS['yaw'])
+                    list_pid_roll.append([Kp_y, Ki_y, Kd_y])
+
+
+                    # time
+                    l_time = time.time()-start_time
+                    list_time.append(l_time)
+
+
+                    cursor_msg = f'Init tracker is True, {CMDS["throttle"]}, target pos: {dict_["z_target"]}, corrent: {dict_["z_current"]}, {pid_output_throttle}, Target Kp: {Kp_z}'
+                    # cursor_msg = f'Init tracker is True, {CMDS["yaw"]}, target pos: {dict_["y_target"]}, corrent: {dict_["y_current"]}, {pid_output_yaw}, Target Kp_y: {Kp_y}'
+                
+
+                    # pitch 
+                    #CMDS['pitch'] = 1700
+
+                screen.addstr(7, 100, "Start track: {}".format(str(dict_["init_tracker"])), curses.A_BOLD)
                 screen.clrtoeol()                
                   
                 if (time.time()-last_slow_msg_time) >= SLOW_MSGS_LOOP_TIME:
@@ -445,13 +438,13 @@ def keyboard_controller(screen, dict_):
                         screen.clrtoeol()
                         mode = board.process_mode(board.CONFIG['mode'])
                         if 'MSP OVERRIDE' in mode:
-                            screen.addstr(7, 50, "Autopilot ON Flight Mode: {}".format(mode))
                             autopilot = True
                             CMDS['aux2'] = 1500
+                            screen.addstr(7, 50, "Autopilot ON Flight Mode: {}".format(mode))
                         else:
-                            screen.addstr(7, 50, "Autopilot OFF Flight Mode: {}".format(mode))
                             autopilot = False
-                            
+                            CMDS['aux2'] = 1000
+                            screen.addstr(7, 50, "Autopilot OFF Flight Mode: {}".format(mode))
                         screen.clrtoeol()
                     elif next_msg == 'MSP_MOTOR':
                         screen.addstr(19, 0, "Motor Values: {}".format(board.MOTOR_DATA))
@@ -461,11 +454,16 @@ def keyboard_controller(screen, dict_):
                         if board.RC['channels'][7] == 2011:
                             # зафиксировать обьект
                             dict_["controller_init_tracker"] = True
+                            CMDS['aux2'] = 1500
                         else:
                             # открепить обьект
                             dict_["controller_init_tracker"] = False
                         if autopilot == False:    
-                            last_channels = board.RC['channels']    
+                            CMDS['throttle'] = board.RC['channels'][3]
+                            CMDS['yaw'] = board.RC['channels'][2]
+                            CMDS['pitch'] = board.RC['channels'][1]
+                            CMDS['roll'] = board.RC['channels'][0]  
+#                            CMDS['aux2'] = 1500
                         screen.addstr(20, 0, "RC Channels Values: {}".format(board.RC['channels']))
                         screen.addstr(21, 0, f"RC Channels Client: {[CMDS[ki] for ki in CMDS_ORDER]}")
                         screen.clrtoeol()
@@ -570,12 +568,14 @@ def image_task(dict_):
                     data = data[msg_size:]
                     bbox, state, init_switch = pickle.loads(frame_data)
 
+                    # включение выключение слежения cmd 
                     if state > 1:
                         if sum(bbox[-2:]) > 10:
                             lib_start.init_tracker(_img, bbox, A = True, B = True)
                             lib_start.state = 0
                             init_tracker = True
                             
+                    # включение выключение слежения с пульта        
                     if dict_["controller_init_tracker"]:
                         pressed_activate_key_track += 1
                         if pressed_activate_key_track == 1:
