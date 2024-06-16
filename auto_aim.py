@@ -439,11 +439,11 @@ def keyboard_controller(screen, dict_):
                         mode = board.process_mode(board.CONFIG['mode'])
                         if 'MSP OVERRIDE' in mode:
                             autopilot = True
-                            CMDS['aux2'] = 1500
+#                            CMDS['aux2'] = 1500
                             screen.addstr(7, 50, "Autopilot ON Flight Mode: {}".format(mode))
                         else:
                             autopilot = False
-                            CMDS['aux2'] = 1000
+#                            CMDS['aux2'] = 1000
                             screen.addstr(7, 50, "Autopilot OFF Flight Mode: {}".format(mode))
                         screen.clrtoeol()
                     elif next_msg == 'MSP_MOTOR':
