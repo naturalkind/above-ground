@@ -1,7 +1,10 @@
 #https://github.com/rockchip-linux/rknn-toolkit2/tree/master/examples/onnx/yolov5
 import cv2
 import numpy as np
-import sort
+try:
+    from tracker_lib.sort_yolov5_python import sort
+except ModuleNotFoundError:
+    import sort
 
 OBJ_THRESH, NMS_THRESH, IMG_SIZE = 0.25, 0.45, 640
 
@@ -235,14 +238,8 @@ def myFunc(rknn_lite, IMG):
     input_data.append(np.transpose(input2_data, (2, 3, 0, 1)))
 
     boxes, classes, scores = yolov5_post_process(input_data)
-    IMG = cv2.cvtColor(IMG, cv2.COLOR_RGB2BGR)
     if boxes is not None:
-        result = np.append(boxes, scores.reshape(-1,1), axis=1)
-        trackers = mot_tracker.update(result)
-#        print("---------------->", trackers)
-#        draw(IMG, boxes, scores, classes)
-        draw2(IMG, trackers[:,:-1], trackers[:,-1])
-    return IMG
+        return boxes, scores, classes
     
     
 def myFunc2(rknn_lite, IMG):
@@ -268,5 +265,5 @@ def myFunc2(rknn_lite, IMG):
         result = np.append(boxes, scores.reshape(-1,1), axis=1)
         trackers = mot_tracker.update(result)
         return trackers
-    else:
-        boxes
+#    else:
+#        boxes

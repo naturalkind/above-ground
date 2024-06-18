@@ -509,9 +509,9 @@ def image_task(dict_):
     # Ожидание подключения клиента
     server_socket.listen(5)
     
-#    k_scale = 1.4
-    k_scale = 0.8
-    cap = cv2.VideoCapture(0)
+    k_scale = 1.0 #  yolo+sort/csrt/kcf
+#    k_scale = 0.8
+    cap = cv2.VideoCapture(1)
     print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
     data = b""
@@ -519,6 +519,7 @@ def image_task(dict_):
     client_socket = False
     size_box = 70
     pressed_activate_key_track = 0
+    lib_start.init_yolo()
     while True:
         client_socket, addr = server_socket.accept()
         #print('Получено соединение от:', addr, client_socket)
@@ -602,15 +603,15 @@ if __name__ == '__main__':
         dict_["init_tracker"] = False
         dict_["controller_init_tracker"] = False
         # run the thread
-        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
-        thread1.start() 
+#        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
+#        thread1.start() 
                 
         thread2 = Process(target=image_task, args=(dict_,), daemon=True)
         thread2.start() 
         
         # wait for the thread to finish
         print('Waiting for the thread...')
-        thread1.join()  
+#        thread1.join()  
         thread2.join()    
         
 
