@@ -233,6 +233,9 @@
 * https://github.com/betaflight/betaflight/issues/8292
 * https://github.com/AscendNTNU/msp_flightcontroller_interface
 
+#### DeepSORT
+* https://github.com/mandoo92/DeepSort_OpenCV/tree/main
+* https://github.innominds.com/shaoshengsong/DeepSORT
 
 #### Интересно
 * https://habr.com/ru/articles/650013/

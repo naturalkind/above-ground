@@ -147,6 +147,5 @@ def open_files_in_folder(path):
                 
 
 if __name__ == '__main__':
-    folder_path = "C:/Users/Admin/Documents/Unreal Projects/main/above-ground/web-UI/pid_data"
+    folder_path = ""
     open_files_in_folder(folder_path)
-    # [0.00451351776456612, 0.002525362076037464, 0.3770580428079317]

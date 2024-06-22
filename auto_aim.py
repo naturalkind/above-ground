@@ -274,7 +274,10 @@ def keyboard_controller(screen, dict_):
                     CMDS['aux2'] = 1000
                     CMDS['throttle'] = 1000
 
-                    with open('data.json', 'w') as f:
+                    # Получите текущую дату и время
+                    current_time = time.localtime(time.time())
+                    current_date = time.strftime('%Y-%m-%d_%H-%M-%S', current_time)
+                    with open(f'data/pid_data/data_{current_date}.json', 'w') as f:
                         data = {"list_time":list_time, 
                         
                                 "list_rc_thr":list_rc_thr, 
