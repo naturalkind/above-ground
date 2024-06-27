@@ -3,7 +3,7 @@
 1. установить на sd образ ubuntu
 2. загрузиться с sd
 3. запустить orangepi-config
-   - system &rarr hardware
+   - system-hardware
    - находим в списке ssd-sata, и ставим галочку 
    - сохраняем, перезагружаем 
 4. `sudo dd if=/usr/share/orangepi5/rkspi_loader_sata.img of =/dev/mtdblock0`
@@ -13,12 +13,11 @@
 7. записываем образ #0 в ssd с помощью balenaEtcher
 8. выключаем
 9. запускаем как только начинает моргать зеленым вытаскиваем cd, и дальше грузимся уже с ssd
-10. добавляем в файл boot/orangepiEnv.txt, 
-"overlays=ssd-sata"
+10. `overlays=ssd-sata` добавляем в файл `boot/orangepiEnv.txt`
 11. выполняем пункт 3, 3.1, 3.2, 3.3
 12. выключаем
 13. грузимся с ssd без проблем
-тестировал Orangepi5_1.1.6_ubuntu_jammy_desktop_gnome_linux5.10.110
+тестировал `Orangepi5_1.1.6_ubuntu_jammy_desktop_gnome_linux5.10.110`
 
 
 #### Запустить DeepSORT c++/python
@@ -36,12 +35,12 @@ https://github.innominds.com/shaoshengsong/DeepSORT
 
 Компелировать opencv для работы с npu
 https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU
-``` 
-git clone -b 4.8.1 https://github.com/opencv/opencv_contrib.git
-git clone -b 4.8.1 https://github.com/opencv/opencv.git
-cmake -D OPENCV_GENERATE_PKGCONFIG=ON -D OPENCV_ENABLE_NONFREE=ON -D CMAKE_BUILD_TYPE=RELEASE -D ENABLE_NEON=ON -D ENABLE_TBB=ON -D ENABLE_IPP=ON -D ENABLE_VFVP3=ON -D WITH_OPENMP=ON -D WITH_CSTRIPES=ON -D WITH_OPENCL=ON -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=/home/orange/opencv_contrib/modules/ ..
-make -j8
-sudo make install
+    ``` 
+    git clone -b 4.8.1 https://github.com/opencv/opencv_contrib.git
+    git clone -b 4.8.1 https://github.com/opencv/opencv.git
+    cmake -D OPENCV_GENERATE_PKGCONFIG=ON -D OPENCV_ENABLE_NONFREE=ON -D CMAKE_BUILD_TYPE=RELEASE -D ENABLE_NEON=ON -D ENABLE_TBB=ON -D ENABLE_IPP=ON -D ENABLE_VFVP3=ON -D WITH_OPENMP=ON -D WITH_CSTRIPES=ON -D WITH_OPENCL=ON -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=/home/orange/opencv_contrib/modules/ ..
+    make -j8
+    sudo make install
 ```
 > [!NOTE]
 > удаление: https://stackoverflow.com/questions/13134151/how-to-uninstall-opencv-in-ubuntu 
@@ -50,17 +49,17 @@ sudo make install
 
 github: `https://gist.github.com/narate/d3f001c97e1c981a59f94cd76f041140`
 
-```
-nmcli con add type wifi ifname wlan0 con-name Hostspot autoconnect yes ssid Hostspot
-nmcli con modify Hostspot 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
-nmcli con modify Hostspot wifi-sec.key-mgmt wpa-psk
-nmcli con modify Hostspot wifi-sec.psk "PASSWORD_CREATE"
-nmcli con up Hostspot
+    ```
+    nmcli con add type wifi ifname wlan0 con-name Hostspot autoconnect yes ssid Hostspot
+    nmcli con modify Hostspot 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
+    nmcli con modify Hostspot wifi-sec.key-mgmt wpa-psk
+    nmcli con modify Hostspot wifi-sec.psk "PASSWORD_CREATE"
+    nmcli con up Hostspot
 
-nmcli con show
-nmcli connection delete id <connection name>
-nmcli connection delete <connection name>
-```
+    nmcli con show
+    nmcli connection delete id <connection name>
+    nmcli connection delete <connection name>
+    ```
 
 #### Установка Betaflight ARM
 
@@ -157,9 +156,9 @@ nmcli connection delete <connection name>
 > `/home/orangepi/betaflight-configurator/` - это путь к вашей папке betaflight
 
 Проверка на ошибки!
-```
-desktop-file-validate betaflight-configurator.desktop 
-```
+    ```
+    desktop-file-validate betaflight-configurator.desktop 
+    ```
 
 > В точности по этой инструкции у меня не заработало `https://www.gandytech.co.uk/blog/betaflight-configurator-on-manjaro-linux-arm64/`
 
