@@ -65,14 +65,13 @@ class PIDController:
         self.prev_error = 0
         self.integral = 0
 
-    def update(self, current_value, target_value):
+    def update(self, current_value, target_value, dt):
         error = target_value - current_value
-        self.integral += error
-        derivative = error - self.prev_error
-        self.prev_error = error
+        self.integral += error * dt
+        derivative = (error - self.prev_error) / dt
+        self.prev_error = error 
         output = (self.kp * error) + (self.ki * self.integral) + (self.kd * derivative)
         return output
-
 
 def run_curses(dict_):
     result=1
@@ -159,6 +158,7 @@ def keyboard_controller(screen, dict_):
     # Create a PID controller object throttle
     pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) 
 
+    pid_pitch = PIDController(Kp_z, Ki_z, Kd_z) 
     
     CMDS = {
             'roll':     1500,
@@ -244,6 +244,11 @@ def keyboard_controller(screen, dict_):
             list_target_roll = []
             list_rc_roll = []
             list_pid_roll = []            
+
+            # pitch
+            list_target_pitch = []
+            list_rc_pitch = []
+            list_pid_pitch = [] 
 
             # time
             list_time = []
@@ -348,10 +353,11 @@ def keyboard_controller(screen, dict_):
                 # SLOW MSG processing (user GUI)
                 #
                 if ARMED == autopilot == dict_["init_tracker"] == True:
-                        
-                    # throttle
+                      
+                    dt = time.time()-start_time  
+                    # THROTTLE
                     
-                    pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
+                    pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"], dt)        
                     if 1000 <= CMDS['throttle']+pid_output_throttle <= 1900:
                         CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
                     list_target_thr.append(dict_["z_target"]-dict_["z_current"])
@@ -359,23 +365,31 @@ def keyboard_controller(screen, dict_):
                     list_pid_thr.append([Kp_z, Ki_z, Kd_z])
 
 
-                    # yaw
+                    # YAW
 
                     # CMDS['throttle'] = 1250 
-                    pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"]) 
+                    pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"], dt) 
                     CMDS['yaw'] = CMDS['yaw'] + pid_output_yaw
                     list_target_yaw.append(dict_["y_target"]-dict_["y_current"])
                     list_rc_yaw.append(CMDS['yaw'])
                     list_pid_yaw.append([Kp_y, Ki_y, Kd_y])
 
-                    # roll
+                    # ROLL
 
-                    pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) 
+                    pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"], dt)
                     #CMDS['roll'] = CMDS['roll'] + pid_output_roll
                     list_target_roll.append(dict_["y_target"]-dict_["y_current"])
                     list_rc_roll.append(CMDS['yaw'])
                     list_pid_roll.append([Kp_y, Ki_y, Kd_y])
 
+
+                    # PITCH
+                    pid_output_pitch = pid_pitch.update(dict_["z_target"], dict_["z_current"], dt)
+                    #CMDS['pitch'] = CMDS['pitch'] + pid_output_pitch
+                    #CMDS['pitch'] = 1700
+                    list_target_pitch.append(dict_["z_target"], dict_["z_current"])
+                    list_rc_pitch.append(CMDS['pitch'])
+                    list_pid_pitch.append([Kp_y, Ki_y, Kd_y])
 
                     # time
                     l_time = time.time()-start_time
@@ -385,9 +399,6 @@ def keyboard_controller(screen, dict_):
                     cursor_msg = f'Init tracker is True, {CMDS["throttle"]}, target pos: {dict_["z_target"]}, corrent: {dict_["z_current"]}, {pid_output_throttle}, Target Kp: {Kp_z}'
                     # cursor_msg = f'Init tracker is True, {CMDS["yaw"]}, target pos: {dict_["y_target"]}, corrent: {dict_["y_current"]}, {pid_output_yaw}, Target Kp_y: {Kp_y}'
                 
-
-                    # pitch 
-                    #CMDS['pitch'] = 1700
 
                 screen.addstr(7, 100, "Start track: {}".format(str(dict_["init_tracker"])), curses.A_BOLD)
                 screen.clrtoeol()                

@@ -169,3 +169,59 @@ desktop-file-validate betaflight-configurator.desktop
 
 > В точности по этой инструкции у меня не заработало `https://www.gandytech.co.uk/blog/betaflight-configurator-on-manjaro-linux-arm64/`
 
+#### Автозапуск 
+1. 
+    ```
+    sudo apt install x11vnc
+    sudo apt install xvfb
+    sudo apt install xterm
+    ```
+2. `nano reload_aim.sh`
+    ```
+    sudo systemctl stop aim.service
+    sudo systemctl start aim.service
+    sleep 3
+    sudo systemctl status aim.service
+    ```
+3. `sudo nano /etc/systemd/system/aim.service`
+    ```
+    [Unit]
+    Description=Python Curses App
+    After=graphical.target
+
+    [Service]
+    Type=forking
+    User=orangepi
+    Environment="DISPLAY:3"
+    Environment="TERM=xterm-256color"
+    ExecStart=screen -dmS python_curses_app /home/orangepi/above-ground/auto_run.sh
+    ExecStop=screen -S python_curses_app -X quit
+    Restart=on-failure
+
+    [Install]
+    WantedBy=graphical.target
+```
+4. `nano /home/orangepi/above-ground/auto_run.sh`
+    ```
+    #!/bin/bash
+
+    cd /home/orangepi/above-ground
+
+    # Активируем виртуальное окружение Python
+    source venv/bin/activate
+    Xvfb :3 -ac -screen 0 1200x1200x24 &
+    export TERM=xterm-256color
+    export DISPLAY=:3
+    sleep 3
+    xterm -geometry 1200x1200 -e "python /home/orangepi/above-ground/auto_aim.py" &
+    x11vnc -display :3 -forever -nopw -quiet
+
+    ```
+5. 
+    ```
+    sudo systemctl enable aim.service
+    sudo systemctl daemon-reload
+    sudo chmod 777 reload_aim.sh
+    ./reload_aim.sh
+    screen -r python_curses_app
+    ```
