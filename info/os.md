@@ -9,8 +9,8 @@
 4. `sudo dd if=/usr/share/orangepi5/rkspi_loader_sata.img of =/dev/mtdblock0`
    - перезагружаем
 5. проверяем видимость накопителя в системе
-6. установленный образ ubuntu #0 помещаем в корневой раздел (флешка или качаем по новой)
-7. записываем образ #0 в ssd с помощью balenaEtcher
+6. установленный образ ubuntu **#0** помещаем в корневой раздел (флешка или качаем по новой)
+7. записываем образ **#0** в ssd с помощью balenaEtcher
 8. выключаем
 9. запускаем как только начинает моргать зеленым вытаскиваем cd, и дальше грузимся уже с ssd
 10. `overlays=ssd-sata` добавляем в файл `boot/orangepiEnv.txt`
@@ -41,7 +41,7 @@ https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU
     cmake -D OPENCV_GENERATE_PKGCONFIG=ON -D OPENCV_ENABLE_NONFREE=ON -D CMAKE_BUILD_TYPE=RELEASE -D ENABLE_NEON=ON -D ENABLE_TBB=ON -D ENABLE_IPP=ON -D ENABLE_VFVP3=ON -D WITH_OPENMP=ON -D WITH_CSTRIPES=ON -D WITH_OPENCL=ON -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=/home/orange/opencv_contrib/modules/ ..
     make -j8
     sudo make install
-```
+    ```
 > [!NOTE]
 > удаление: https://stackoverflow.com/questions/13134151/how-to-uninstall-opencv-in-ubuntu 
 
