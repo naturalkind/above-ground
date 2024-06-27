@@ -33,15 +33,20 @@ https://github.innominds.com/shaoshengsong/DeepSORT
 инструкция https://github.com/Qengineering/Rock-5-image
 установить `git clone git@github.com:rockchip-linux/rknn-toolkit2.git`
 
-Компелировать opencv для работы с npu
-https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU
-    ``` 
-    git clone -b 4.8.1 https://github.com/opencv/opencv_contrib.git
-    git clone -b 4.8.1 https://github.com/opencv/opencv.git
-    cmake -D OPENCV_GENERATE_PKGCONFIG=ON -D OPENCV_ENABLE_NONFREE=ON -D CMAKE_BUILD_TYPE=RELEASE -D ENABLE_NEON=ON -D ENABLE_TBB=ON -D ENABLE_IPP=ON -D ENABLE_VFVP3=ON -D WITH_OPENMP=ON -D WITH_CSTRIPES=ON -D WITH_OPENCL=ON -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=/home/orange/opencv_contrib/modules/ ..
-    make -j8
-    sudo make install
-    ```
+Компелировать opencv для работы с npu   
+https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU   
+```
+git clone -b 4.8.1 https://github.com/opencv/opencv_contrib.git
+
+git clone -b 4.8.1 https://github.com/opencv/opencv.git
+
+cmake -D OPENCV_GENERATE_PKGCONFIG=ON -D OPENCV_ENABLE_NONFREE=ON -D CMAKE_BUILD_TYPE=RELEASE -D ENABLE_NEON=ON -D ENABLE_TBB=ON -D ENABLE_IPP=ON -D ENABLE_VFVP3=ON -D WITH_OPENMP=ON -D WITH_CSTRIPES=ON -D WITH_OPENCL=ON -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=/home/orange/opencv_contrib/modules/ ..
+
+make -j8
+
+sudo make install
+
+```
 > [!NOTE]
 > удаление: https://stackoverflow.com/questions/13134151/how-to-uninstall-opencv-in-ubuntu 
 
