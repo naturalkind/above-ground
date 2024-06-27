@@ -501,7 +501,7 @@ def image_task(dict_):
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
-    #host_ip = '10.42.0.1'
+    host_ip = '10.42.0.1'
     # host_ip = '192.168.1.123'
     print('Хост IP:', host_ip)
     port = 9999
@@ -512,8 +512,8 @@ def image_task(dict_):
     # Ожидание подключения клиента
     server_socket.listen(5)
     
-#    k_scale = 1.4
-    k_scale = 0.8
+    k_scale = 1.0 #  yolo+sort/csrt/kcf
+#    k_scale = 0.8
     cap = cv2.VideoCapture(0)
     print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
@@ -522,6 +522,7 @@ def image_task(dict_):
     client_socket = False
     size_box = 70
     pressed_activate_key_track = 0
+    lib_start.init_yolo()
     while True:
         client_socket, addr = server_socket.accept()
         #print('Получено соединение от:', addr, client_socket)

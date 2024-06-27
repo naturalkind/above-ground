@@ -4,8 +4,8 @@ from rknnpool import rknnPoolExecutor
 #Функция обработки изображений, вам необходимо изменить ее самостоятельно в процессе фактического применения
 from func import myFunc
 
-cap = cv2.VideoCapture(1)
-#cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 modelPath = "./rknnModel/yolov5s_relu_tk2_RK3588_i8.rknn"
 # Увеличьте количество линий, увеличьте скорость
 TPEs = 3
@@ -40,6 +40,7 @@ while (cap.isOpened()):
     fps = 1.0 / seconds
     
     cv2.putText(frame, f"{int(fps)} fps", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,0,255),2) #cv2.FONT_HERSHEY_COMPLEX
+    print ("--->", frame.shape)
     cv2.imshow('test', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

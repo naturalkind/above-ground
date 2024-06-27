@@ -1,7 +1,10 @@
 #https://github.com/rockchip-linux/rknn-toolkit2/tree/master/examples/onnx/yolov5
 import cv2
 import numpy as np
-import sort
+try:
+    from tracker_lib.sort_yolov5_python import sort
+except ModuleNotFoundError:
+    import sort
 
 OBJ_THRESH, NMS_THRESH, IMG_SIZE = 0.25, 0.45, 640
 
@@ -223,7 +226,10 @@ def myFunc(rknn_lite, IMG):
     # IMG = letterbox(IMG)
     # Принудительное сокращение
     IMG = cv2.resize(IMG, (IMG_SIZE, IMG_SIZE))
-    outputs = rknn_lite.inference(inputs=[IMG])
+    # ~ print (IMG.shape)
+    # ~ IMG = np.reshape(IMG, (1, IMG.shape[1], IMG.shape[0], IMG.shape[2]))
+    img = np.expand_dims(IMG, 0)
+    outputs = rknn_lite.inference(inputs=[img])
 
     input0_data = outputs[0].reshape([3, -1]+list(outputs[0].shape[-2:]))
     input1_data = outputs[1].reshape([3, -1]+list(outputs[1].shape[-2:]))
@@ -233,17 +239,18 @@ def myFunc(rknn_lite, IMG):
     input_data.append(np.transpose(input0_data, (2, 3, 0, 1)))
     input_data.append(np.transpose(input1_data, (2, 3, 0, 1)))
     input_data.append(np.transpose(input2_data, (2, 3, 0, 1)))
-
-    boxes, classes, scores = yolov5_post_process(input_data)
-    IMG = cv2.cvtColor(IMG, cv2.COLOR_RGB2BGR)
-    if boxes is not None:
-        result = np.append(boxes, scores.reshape(-1,1), axis=1)
-        trackers = mot_tracker.update(result)
-#        print("---------------->", trackers)
-#        draw(IMG, boxes, scores, classes)
-        draw2(IMG, trackers[:,:-1], trackers[:,-1])
-    return IMG
     
+    
+    boxes, classes, scores = yolov5_post_process(input_data)
+    if boxes is not None:
+        return boxes, scores, classes
+        
+    # ~ boxes, classes, scores = yolov5_post_process(input_data)
+    # ~ print (IMG.shape, rknn_lite, len(outputs))
+    # ~ IMG = cv2.cvtColor(IMG, cv2.COLOR_RGB2BGR)
+    # ~ if boxes is not None:
+        # ~ draw(IMG, boxes, scores, classes)
+    # ~ return IMG
     
 def myFunc2(rknn_lite, IMG):
     IMG = cv2.cvtColor(IMG, cv2.COLOR_BGR2RGB)
@@ -251,7 +258,8 @@ def myFunc2(rknn_lite, IMG):
     # IMG = letterbox(IMG)
     # Принудительное сокращение
     IMG = cv2.resize(IMG, (IMG_SIZE, IMG_SIZE))
-    outputs = rknn_lite.inference(inputs=[IMG])
+    img = np.expand_dims(IMG, 0)
+    outputs = rknn_lite.inference(inputs=[img])
 
     input0_data = outputs[0].reshape([3, -1]+list(outputs[0].shape[-2:]))
     input1_data = outputs[1].reshape([3, -1]+list(outputs[1].shape[-2:]))
@@ -268,5 +276,5 @@ def myFunc2(rknn_lite, IMG):
         result = np.append(boxes, scores.reshape(-1,1), axis=1)
         trackers = mot_tracker.update(result)
         return trackers
-    else:
-        boxes
+#    else:
+#        boxes

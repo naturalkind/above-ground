@@ -3,6 +3,11 @@ import time
 import numpy as np
 from scipy.spatial import distance
 
+
+from tracker_lib.sort_yolov5_python.rknnpool import rknnPoolExecutor
+
+from tracker_lib.sort_yolov5_python.func import myFunc2, draw2, myFunc, draw
+
 class TrackerLib(object):
     def __init__(self):
         # Флаг для отслеживания режима рисования прямоугольника
@@ -19,6 +24,7 @@ class TrackerLib(object):
         self.Error_track = False
         self.dst = 0
         self.obj_center = [0,0]
+        
 
     # Функция для рисования прямоугольника-обработчик событий мыши
     def draw_rectangle(self, event, x, y, flags, userdata):
@@ -211,11 +217,19 @@ class TrackerLib(object):
             self.kcf_tracker = cv2.TrackerKCF_create()
             self.kcf_tracker.init(img, bbox)
         self.init_switch = True
-
-
+    
+    def init_yolo(self):
+        modelPath = "/home/orangepi/above-ground/tracker_lib/sort_yolov5_python/rknnModel/yolov5s_relu_tk2_RK3588_i8.rknn"
+        # Увеличьте количество линий, увеличьте скорость
+        self.TPEs = 3
+        self.pool = rknnPoolExecutor(
+                                    rknnModel=modelPath,
+                                    TPEs=self.TPEs,
+                                    func=myFunc)
+                                    
     def process_img_server(self, img, init_tracker):
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
-        
+        self.pool.put(img)
         if self.init_switch == True or init_tracker == True:
             # Обновление трекера CSRT
             csrt_success, csrt_bbox = self.csrt_tracker.update(img)
@@ -223,6 +237,8 @@ class TrackerLib(object):
             # Обновление трекера KCF
             kcf_success, kcf_bbox = self.kcf_tracker.update(img)
             
+            # отправить в поток NPU (yolo)
+            boxes_yolo, flag = self.pool.get()
             # Взвешивание результатов трекинга
             if csrt_success and kcf_success:                
                 bbox = (0.6 * csrt_bbox[0] + 0.4 * kcf_bbox[0],
@@ -249,8 +265,12 @@ class TrackerLib(object):
                 self.Error_track = "A"
             # yolo мультипоточность 
             # получать сдесь
+        
             
-            
+            if boxes_yolo is not None:
+#                draw2(img, boxes_yolo[:,:-1], boxes_yolo[:,-1])
+                
+                draw(img, boxes_yolo[0], boxes_yolo[1], boxes_yolo[2])    
         #self.state = 0
         return img, self.obj_center, img_center
 
