@@ -389,7 +389,7 @@ def keyboard_controller(screen, dict_):
                     #CMDS['pitch'] = 1700
                     list_target_pitch.append(dict_["z_target"], dict_["z_current"])
                     list_rc_pitch.append(CMDS['pitch'])
-                    list_pid_pitch.append([Kp_y, Ki_y, Kd_y])
+                    list_pid_pitch.append([Kp_z, Ki_z, Kd_z])
 
                     # time
                     l_time = time.time()-start_time

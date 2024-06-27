@@ -3,11 +3,11 @@
 1. установить на sd образ ubuntu
 2. загрузиться с sd
 3. запустить orangepi-config
-  - system->hardware
-  - находим в списке ssd-sata, и ставим галочку 
-  - сохраняем, перезагружаем 
+   - system->hardware
+   - находим в списке ssd-sata, и ставим галочку 
+   - сохраняем, перезагружаем 
 4. sudo dd if=/usr/share/orangepi5/rkspi_loader_sata.img of =/dev/mtdblock0
-  - перезагружаем
+   - перезагружаем
 5. проверяем видимость накопителя в системе
 6. установленный образ ubuntu #0 помещаем в корневой раздел (флешка или качаем по новой)
 7. записываем образ #0 в ssd с помощью balenaEtcher
@@ -25,10 +25,10 @@
 https://github.innominds.com/shaoshengsong/DeepSORT
 
 1. установить opencv sudo pip install opencv-contrib-python==4.8.1.78 
-  - установить скомпилировать onnxruntime
+   - установить скомпилировать onnxruntime
 2. установить opencv arm: 
-  - https://www.programmersought.com/article/254710007175/
-  - https://github.com/huzz/OpenCV-aarch64
+   - https://www.programmersought.com/article/254710007175/
+   - https://github.com/huzz/OpenCV-aarch64
 
 
 инструкция https://github.com/Qengineering/Rock-5-image
@@ -65,99 +65,93 @@ nmcli connection delete <connection name>
 #### Установка Betaflight ARM
 
 1. Установить NODE
-```
-wget https://nodejs.org/dist/v16.15.0/node-v16.15.0-linux-arm64.tar.xz
+    ```
+    wget https://nodejs.org/dist/v16.15.0/node-v16.15.0-linux-arm64.tar.xz
 
-tar -xf node-v16.15.0-linux-arm64.tar.xz
+    tar -xf node-v16.15.0-linux-arm64.tar.xz
 
-cd node-v16.15.0-linux-arm64
+    cd node-v16.15.0-linux-arm64
 
-sudo cp -R * /usr/local/
-```
+    sudo cp -R * /usr/local/
+    
+    node -v
 
-2. Проверить 
-```
-node -v
-
-npm -v
-```
+    npm -v
+    ```
 
 3. Установить nwjs ARM
-```
-sudo mkdir -p /usr/local/lib/nwjs
+    ```
+    sudo mkdir -p /usr/local/lib/nwjs
 
-wget https://github.com/LeonardLaszlo/nw.js-armv7-binaries/releases/download/nw60-arm64_2022-01-08/nw60-arm64_2022-01-08.tar.gz
+    wget https://github.com/LeonardLaszlo/nw.js-armv7-binaries/releases/download/nw60-arm64_2022-01-08/nw60-arm64_2022-01-08.tar.gz
 
-mkdir nw60-arm64_2022-01-08
+    mkdir nw60-arm64_2022-01-08
 
-tar -xvzf nw60-arm64_2022-01-08.tar.gz -C nw60-arm64_2022-01-08
+    tar -xvzf nw60-arm64_2022-01-08.tar.gz -C nw60-arm64_2022-01-08
 
-cd nw60-arm64_2022-01-08/usr/docker/dist/nwjs-chrome-ffmpeg-branding/
+    cd nw60-arm64_2022-01-08/usr/docker/dist/nwjs-chrome-ffmpeg-branding/
 
-tar -xf nwjs-v0.60.1-linux-arm64.tar.gz
+    tar -xf nwjs-v0.60.1-linux-arm64.tar.gz
 
-cd nwjs-v0.60.1-linux-arm64
+    cd nwjs-v0.60.1-linux-arm64
 
-sudo cp -R . /usr/local/lib/nwjs/
+    sudo cp -R . /usr/local/lib/nwjs/
 
-nano ~/.bashrc
+    nano ~/.bashrc
 
-# add nwjs to the path
-export NWJS_HOME=/usr/local/lib/nwjs
-export PATH=$NWJS_HOME:$PATH
+    # add nwjs to the path
+    export NWJS_HOME=/usr/local/lib/nwjs
+    export PATH=$NWJS_HOME:$PATH
 
-source ~/.bashrc
+    source ~/.bashrc
 
-#тестовый запуск 
-
-nw
-```
+    #тестовый запуск 
+    nw
+    ```
 
 4. Установка Betaflight-configurator. Качаем любым способом betaflight-configurator-10.8.0
 можно клонировать репозиторий и переключиться на эту версию/скачать вручную/wget.
 Разархивировать.
-```
-wget https://github.com/betaflight/betaflight-configurator/archive/refs/tags/10.8.0.tar.gz
+    ```
+    wget https://github.com/betaflight/betaflight-configurator/archive/refs/tags/10.8.0.tar.gz
 
-tar -xf 10.8.0.tar.gz
+    tar -xf 10.8.0.tar.gz
 
-cd betaflight-configurator-10.8.0/
+    cd betaflight-configurator-10.8.0/
 
-# и запустить один:
-# v1:
-sudo npm install yarn -g
-yarn install
-yarn gulp dist
+    # v1:
+    sudo npm install yarn -g
+    yarn install
+    yarn gulp dist
 
-# v2:
-npm install
-npm install --save-dev run-script-os
-npm start
-```
+    # v2:
+    npm install
+    npm install --save-dev run-script-os
+    npm start
+    ```
 
 5. Для удобства запуска создаём ярлык
-```
-cd ~/.local/share/applications
-nano betaflight-configurator.desktop
-```
+    ```
+    cd ~/.local/share/applications
+    nano betaflight-configurator.desktop
+    ```
 
-"""
-[Desktop Entry]
-Type=Application
+    ```
+    [Desktop Entry]
+    Type=Application
 
-Name=BF Configurator
+    Name=BF Configurator
 
-Path=/home/orangepi/betaflight-configurator/debug/betaflight-configurator/linux64
+    Path=/home/orangepi/betaflight-configurator/debug/betaflight-configurator/linux64
 
-Terminal=false
+    Terminal=false
 
-Exec=/usr/local/lib/nwjs/nw .
+    Exec=/usr/local/lib/nwjs/nw .
 
-Icon=/home/orangepi/betaflight-configurator/debug/betaflight-configurator/linux64/icon/bf_icon_128.png
+    Icon=/home/orangepi/betaflight-configurator/debug/betaflight-configurator/linux64/icon/bf_icon_128.png
 
-Categories=Utility
-
-"""
+    Categories=Utility
+    ```
 
 > [!CAUTION]
 > `/home/orangepi/betaflight-configurator/` - это путь к вашей папке betaflight
