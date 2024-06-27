@@ -219,7 +219,7 @@ class TrackerLib(object):
         self.init_switch = True
     
     def init_yolo(self):
-        modelPath = "/home/orange/above-ground/tracker_lib/sort_yolov5_python/rknnModel/yolov5s_relu_tk2_RK3588_i8.rknn"
+        modelPath = "/home/orangepi/above-ground/tracker_lib/sort_yolov5_python/rknnModel/yolov5s_relu_tk2_RK3588_i8.rknn"
         # Увеличьте количество линий, увеличьте скорость
         self.TPEs = 3
         self.pool = rknnPoolExecutor(
