@@ -3,10 +3,10 @@
 1. установить на sd образ ubuntu
 2. загрузиться с sd
 3. запустить orangepi-config
-   - system->hardware
+   - system &rarr hardware
    - находим в списке ssd-sata, и ставим галочку 
    - сохраняем, перезагружаем 
-4. sudo dd if=/usr/share/orangepi5/rkspi_loader_sata.img of =/dev/mtdblock0
+4. `sudo dd if=/usr/share/orangepi5/rkspi_loader_sata.img of =/dev/mtdblock0`
    - перезагружаем
 5. проверяем видимость накопителя в системе
 6. установленный образ ubuntu #0 помещаем в корневой раздел (флешка или качаем по новой)
@@ -24,7 +24,7 @@
 #### Запустить DeepSORT c++/python
 https://github.innominds.com/shaoshengsong/DeepSORT
 
-1. установить opencv sudo pip install opencv-contrib-python==4.8.1.78 
+1. установить opencv `sudo pip install opencv-contrib-python==4.8.1.78` 
    - установить скомпилировать onnxruntime
 2. установить opencv arm: 
    - https://www.programmersought.com/article/254710007175/
@@ -32,7 +32,7 @@ https://github.innominds.com/shaoshengsong/DeepSORT
 
 
 инструкция https://github.com/Qengineering/Rock-5-image
-установить git clone git@github.com:rockchip-linux/rknn-toolkit2.git
+установить `git clone git@github.com:rockchip-linux/rknn-toolkit2.git`
 
 Компелировать opencv для работы с npu
 https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU
