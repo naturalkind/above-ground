@@ -498,8 +498,7 @@ def image_task(dict_):
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
-    host_ip = '10.42.0.1'
-    # host_ip = '192.168.1.123'
+    # host_ip = '10.42.0.1'
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -519,7 +518,7 @@ def image_task(dict_):
     client_socket = False
     size_box = 70
     pressed_activate_key_track = 0
-    lib_start.init_yolo()
+    #lib_start.init_yolo()
     while True:
         client_socket, addr = server_socket.accept()
         #print('Получено соединение от:', addr, client_socket)
@@ -529,7 +528,8 @@ def image_task(dict_):
                 (status, frame) = cap.read()
                 if status:
                     frame = cv2.resize(frame, (int(frame.shape[1]*k_scale), int(frame.shape[0]*k_scale)))
-                    _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])  
+                    #_img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])
+                    _img, obj_center, img_center = lib_start.process_img_server_NanoTrack(frame, dict_["init_tracker"])  
 
                     area_OIU = [img_center[0]-size_box, img_center[1]-size_box, img_center[0]+size_box, img_center[1]+size_box]
                     area_OIU = [int(d) for d in area_OIU]
@@ -573,6 +573,7 @@ def image_task(dict_):
                     if state > 1:
                         if sum(bbox[-2:]) > 10:
                             lib_start.init_tracker(_img, bbox, A = True, B = True)
+                            lib_start.init_NanoTrack(_img, bbox)
                             lib_start.state = 0
                             init_tracker = True
                             
@@ -603,15 +604,15 @@ if __name__ == '__main__':
         dict_["init_tracker"] = False
         dict_["controller_init_tracker"] = False
         # run the thread
-        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
-        thread1.start() 
+        # ~ thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
+        # ~ thread1.start() 
                 
         thread2 = Process(target=image_task, args=(dict_,), daemon=True)
         thread2.start() 
         
         # wait for the thread to finish
         print('Waiting for the thread...')
-        thread1.join()  
+        # ~ thread1.join()  
         thread2.join()    
         
 

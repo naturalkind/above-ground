@@ -1,33 +1,12 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import os
-import sys
-import cv2
+import  cv2
 import time
-import argparse
 import numpy as np
-from glob import glob
 from scipy.spatial import distance
 
 
-# NanoTrack
-sys.path.append(os.getcwd())
-from tracker_lib.NanoTrack.core.config import cfg
-from tracker_lib.NanoTrack.models.rknnlite_rk3588_tracker import NnoTracker_RKNNLite
-
-parser = argparse.ArgumentParser(description='tracking demo')
-parser.add_argument('--config', default='./tracker_lib/NanoTrack/models/config/config.yaml', type=str, help='config file')
-parser.add_argument('--save', action='store_true', help='whether visualzie result')
-args = parser.parse_args()
-
-
-# YOLO + SORT
 from tracker_lib.sort_yolov5_python.rknnpool import rknnPoolExecutor
-from tracker_lib.sort_yolov5_python.func import myFunc2, draw2, myFunc, draw
 
+from tracker_lib.sort_yolov5_python.func import myFunc2, draw2, myFunc, draw
 
 class TrackerLib(object):
     def __init__(self):
@@ -91,9 +70,9 @@ class TrackerLib(object):
         return (xcentr, ycentr)    
 
 
-    def draw_box(self, img, bbox, color_border_box = (255, 0, 255)):
+    def draw_box(self, img, bbox):
         x, y, w, h = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
-        cv2.rectangle(img, (x, y), ((x+w), (y+h)), color_border_box, 3, 1)
+        cv2.rectangle(img, (x, y), ((x+w), (y+h)), (255, 0, 255), 3, 1)
         return self.get_center(img, x, y, w, h)
 
 
@@ -113,8 +92,8 @@ class TrackerLib(object):
         cv2.setMouseCallback('win', self.draw_rectangle)   
     
 
-    def image_process(self, img, bbox, img_center, color_border_box = (255, 0, 255)):
-        self.obj_center = self.draw_box(img, bbox, color_border_box)
+    def image_process(self, img, bbox, img_center):
+        self.obj_center = self.draw_box(img, bbox)
         x_dist = (self.obj_center[0] - img_center[0])**2
         y_dist = (self.obj_center[1] - img_center[1])**2 
 
@@ -248,19 +227,7 @@ class TrackerLib(object):
                                     TPEs=self.TPEs,
                                     # func=myFunc) # YOLO
                                     func=myFunc2) # YOLO + SORT
-    def init_NanoTrack(self, img, bbox):
-        # load config
-        cfg.merge_from_file(args.config)
-
-        # load_weight
-        Tback_weight = './tracker_lib/NanoTrack/weights/track_backbone_T.rknn'
-        Xback_weight = './tracker_lib/NanoTrack/weights/track_backbone_X.rknn'
-        Head_weight = './tracker_lib/NanoTrack/weights/head.rknn'
-
-        self.NanoTracker = NnoTracker_RKNNLite(Tback_weight, Xback_weight, Head_weight)   
-        self.NanoTracker.init(img, bbox)
-
-                                   
+                                    
     def process_img_server(self, img, init_tracker):
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
         # отправить в поток NPU (yolo)
@@ -349,130 +316,9 @@ class TrackerLib(object):
             img[size_0-_size:size_0, size_3:size_3+line_box,:] = color
         return img
 
-
-    def process_img_server_NanoTrack(self, img, init_tracker):
-        img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
-        if self.init_switch == True or init_tracker == True:
-            # Обновление трекера CSRT
-            csrt_success, csrt_bbox = self.csrt_tracker.update(img)
-            
-            # Обновление трекера KCF
-            kcf_success, kcf_bbox = self.kcf_tracker.update(img)
-            
-            # получить из поток NPU (NanoTrack)
-            outputs_NanoTrack = self.NanoTracker.track(img)
-
-            # Взвешивание результатов трекинга
-            if csrt_success and kcf_success:                
-                bbox = (0.6 * csrt_bbox[0] + 0.4 * kcf_bbox[0],
-                         0.6 * csrt_bbox[1] + 0.4 * kcf_bbox[1],
-                         0.6 * csrt_bbox[2] + 0.4 * kcf_bbox[2],
-                         0.6 * csrt_bbox[3] + 0.4 * kcf_bbox[3])
-                self.dst = distance.euclidean(self.last_bbox, bbox)
-                bbox = [int(x) for x in bbox]
-                self.last_bbox = bbox
-                self.image_process(img, bbox, img_center)
-                self.Error_track = "A+B"
-                                
-            elif csrt_success:
-                bbox = csrt_bbox 
-                self.dst = distance.euclidean(self.last_bbox, bbox)
-                self.image_process(img, bbox, img_center)
-                self.last_bbox = bbox
-                self.Error_track = "A"
-            elif kcf_success:     
-                bbox = kcf_bbox 
-                self.dst = distance.euclidean(self.last_bbox, bbox)
-                self.image_process(img, bbox, img_center)
-                self.last_bbox = bbox
-                self.Error_track = "A"
-            
-                
-            if 'polygon' in outputs_NanoTrack:
-                polygon = np.array(outputs_NanoTrack['polygon']).astype(np.int32)
-                cv2.polylines(img, [polygon.reshape((-1, 1, 2))],
-                              True, (0, 255, 0), 3)
-                mask = ((outputs_NanoTrack['mask'] > cfg.TRACK.MASK_THERSHOLD) * 255)
-                mask = mask.astype(np.uint8)
-                mask = np.stack([mask, mask * 255, mask]).transpose(1, 2, 0)
-                frame = cv2.addWeighted(img, 0.77, mask, 0.23, -1)
-            else:
-                bbox = list(map(int, outputs_NanoTrack['bbox']))
-                self.image_process(img, bbox, img_center, color_border_box = (255, 0, 35))           
-                 
-        #self.state = 0
-        return img, self.obj_center, img_center
-
-
-    def start_stream_noTracker(self, id_cma = 1):
-        # load config
-        cfg.merge_from_file(args.config)
-
-        # load_weight
-        Tback_weight = './NanoTrack/weights/track_backbone_T.rknn'
-        Xback_weight = './NanoTrack/weights/track_backbone_X.rknn'
-        Head_weight = './NanoTrack/weights/head.rknn'
-
-        tracker = NnoTracker_RKNNLite(Tback_weight, Xback_weight, Head_weight)
-        first_frame = True
- 
-        self.cap = cv2.VideoCapture(id_cma)
-        # ROI in video
-        while self.cap.isOpened():
-            # FPS варианты
-            start_time = time.time()
-#            timer = cv2.getTickCount()
-            success, img = self.cap.read()
-            #img = self.increase_brightness(img)
-            #img = cv2.flip(img, 1)
-            img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
-            if self.state > 1:
-                if sum(self.bbox[-2:]) > 10:
-                    if first_frame:
-                        print ("----------------->")
-                        cv2.rectangle(img, self.bbox, (255, 0, 0), 10)
-                        tracker.init(img, self.bbox)
-                        first_frame = False
-                        self.init_switch = True
-                        self.state = False
-            if self.init_switch:
-                outputs = tracker.track(img)
-                if 'polygon' in outputs:
-                    polygon = np.array(outputs['polygon']).astype(np.int32)
-                    cv2.polylines(img, [polygon.reshape((-1, 1, 2))],
-                                  True, (0, 255, 0), 3)
-                    mask = ((outputs['mask'] > cfg.TRACK.MASK_THERSHOLD) * 255)
-                    mask = mask.astype(np.uint8)
-                    mask = np.stack([mask, mask * 255, mask]).transpose(1, 2, 0)
-                    frame = cv2.addWeighted(img, 0.77, mask, 0.23, -1)
-                else:
-                    bbox = list(map(int, outputs['bbox']))
-                    self.image_process(img, bbox, img_center, color_border_box = (255, 0, 35))
-     
-            # FPS варианты
-            #fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)
-            end_time = time.time()
-            seconds = end_time - start_time
-            fps = 1.0 / seconds
-            
-            cv2.putText(img, f"{int(fps)} fps", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,0,255),2) #cv2.FONT_HERSHEY_COMPLEX
-            
-            # Если начальные и конечные координаты прямоугольника определены
-            if self.start_x != -1 and self.end_x != -1:
-                if self.state != 0:
-                    # Рисование прямоугольника на изображении
-                    cv2.rectangle(img, (self.start_x, self.start_y), (self.end_x, self.end_y), (0, 255, 0), 2)
-            cv2.imshow("win", img)
-            if cv2.waitKey(1) & 0xff == ord('q'):
-                break    
-        self.cap
-        cv2.destroyAllWindows()
-
-
-
 if __name__ == "__main__":
     print ("START")
     lib_start = TrackerLib()
     lib_start.create_win()
-    # lib_start.start_stream(id_cma=0)
-    lib_start.start_stream_noTracker(id_cma=0)
+    lib_start.start_stream(id_cma=1)
+    
