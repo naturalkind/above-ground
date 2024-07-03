@@ -225,10 +225,12 @@ class TrackerLib(object):
         self.pool = rknnPoolExecutor(
                                     rknnModel=modelPath,
                                     TPEs=self.TPEs,
-                                    func=myFunc)
+                                    # func=myFunc) # YOLO
+                                    func=myFunc2) # YOLO + SORT
                                     
     def process_img_server(self, img, init_tracker):
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
+        # отправить в поток NPU (yolo)
         self.pool.put(img)
         if self.init_switch == True or init_tracker == True:
             # Обновление трекера CSRT
@@ -237,7 +239,7 @@ class TrackerLib(object):
             # Обновление трекера KCF
             kcf_success, kcf_bbox = self.kcf_tracker.update(img)
             
-            # отправить в поток NPU (yolo)
+            # получить из поток NPU (yolo)
             boxes_yolo, flag = self.pool.get()
             # Взвешивание результатов трекинга
             if csrt_success and kcf_success:                
@@ -268,9 +270,9 @@ class TrackerLib(object):
         
             
             if boxes_yolo is not None:
-#                draw2(img, boxes_yolo[:,:-1], boxes_yolo[:,-1])
-                
-                draw(img, boxes_yolo[0], boxes_yolo[1], boxes_yolo[2])    
+               # draw(img, boxes_yolo[0], boxes_yolo[1], boxes_yolo[2]) # YOLO  
+               draw2(img, boxes_yolo[:,:-1], boxes_yolo[:,-1]) # YOLO + SORT
+                 
         #self.state = 0
         return img, self.obj_center, img_center
 
