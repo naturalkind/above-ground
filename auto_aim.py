@@ -27,6 +27,8 @@ import matplotlib.ticker as ticker
 from scipy.signal import argrelextrema
 import json
 
+from scipy.optimize import minimize
+
 
 lib_start = tracker_lib.TrackerLib()
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
@@ -65,13 +67,101 @@ class PIDController:
         self.prev_error = 0
         self.integral = 0
 
-    def update(self, current_value, target_value):
+    def update(self, current_value, target_value, dt):
         error = target_value - current_value
-        self.integral += error
-        derivative = error - self.prev_error
-        self.prev_error = error
+        self.integral += error * dt
+        derivative = (error - self.prev_error) / dt
+        self.prev_error = error 
         output = (self.kp * error) + (self.ki * self.integral) + (self.kd * derivative)
         return output
+
+
+##########################
+
+class AdaptivePIDController:
+    def __init__(self, kp=1.0, ki=0.1, kd=0.05):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.error_sum = 0
+        self.last_error = 0
+        self.last_time = time.time()
+        
+        # Параметры экстремального поиска
+        self.a = 0.1  # Амплитуда возмущения
+        self.omega = 1.0  # Частота возмущения
+        self.gamma = 0.01  # Коэффициент обучения
+        
+        # Параметры обучения с подкреплением
+        self.q_values = np.zeros((3, 3))  # Q-таблица для P, I, D (увеличить, уменьшить, не менять)
+        self.epsilon = 0.1  # Вероятность исследования
+        self.alpha = 0.1  # Скорость обучения для Q-learning
+        
+        self.running = True
+        self.optimization_thread = Thread(target=self.optimize_parameters)
+        self.optimization_thread.start()
+
+    def compute(self, current_value, target_value, dt):
+        current_time = time.time()
+        dt = current_time - self.last_time
+        
+        error = target_value - current_value
+        self.error_sum += error * dt
+        error_diff = (error - self.last_error) / dt if dt > 0 else 0
+        
+        output = (self.kp * error +
+                  self.ki * self.error_sum +
+                  self.kd * error_diff)
+        
+        self.last_error = error
+        self.last_time = current_time
+        
+        return output
+
+
+    def optimize_parameters(self):
+        t = 0
+        while self.running:
+            # Экстремальный поиск
+            perturbation = self.a * np.sin(self.omega * t)
+            self.kp += perturbation
+            
+            # Измерение производительности (предполагаем, что меньше ошибка - лучше)
+            performance = -abs(self.last_error)
+            
+            # Обновление параметров
+            gradient_estimate = performance * perturbation
+            self.kp += self.gamma * gradient_estimate
+            
+            # Q-learning для Ki и Kd
+            for param in ['ki', 'kd']:
+                if np.random.random() < self.epsilon:
+                    action = np.random.choice(3)  # 0: уменьшить, 1: не менять, 2: увеличить
+                else:
+                    action = np.argmax(self.q_values[0 if param == 'ki' else 1])
+                
+                old_value = getattr(self, param)
+                if action == 0:
+                    setattr(self, param, old_value * 0.99)
+                elif action == 2:
+                    setattr(self, param, old_value * 1.01)
+                
+                new_performance = -abs(self.last_error)
+                reward = new_performance - performance
+                
+                # Обновление Q-значений
+                old_q = self.q_values[0 if param == 'ki' else 1][action]
+                self.q_values[0 if param == 'ki' else 1][action] += self.alpha * (reward - old_q)
+            
+            t += 0.1
+            time.sleep(0.1)  # Пауза для снижения нагрузки на CPU
+
+    def stop(self):
+        self.running = False
+        self.optimization_thread.join()
+
+
+#################################
 
 
 def run_curses(dict_):
@@ -122,8 +212,8 @@ def keyboard_controller(screen, dict_):
     Ki_y = -0.00022 
     Kd_y = -0.48799709320068358
     
-    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y) 
-
+#    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y) 
+    pid_yaw = AdaptivePIDController(kp=Kp_y, ki=Ki_y, kd=Kd_y)
 
     ##########
     # roll PID
@@ -132,8 +222,8 @@ def keyboard_controller(screen, dict_):
     Kp_y = 0 
     Ki_y = 0 
     Kd_y = 0
-    pid_roll = PIDController(Kp_y, Ki_y, Kd_y)  
-    
+#    pid_roll = PIDController(Kp_y, Ki_y, Kd_y)  
+    pid_roll = AdaptivePIDController(kp=Kp_y, ki=Ki_y, kd=Kd_y)
 
     ##########
     # throttle PID
@@ -157,9 +247,11 @@ def keyboard_controller(screen, dict_):
 
 
     # Create a PID controller object throttle
-    pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) 
+#    pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) 
+    pid_throttle = AdaptivePIDController(kp=Kp_z, ki=Ki_z, kd=Kd_z)
 
-    
+#    pid_pitch = PIDController(Kp_z, Ki_z, Kd_z) 
+    pid_pitch = AdaptivePIDController(kp=Kp_z, ki=Ki_z, kd=Kd_z)
     CMDS = {
             'roll':     1500,
             'pitch':    1500,
@@ -245,6 +337,11 @@ def keyboard_controller(screen, dict_):
             list_rc_roll = []
             list_pid_roll = []            
 
+            # pitch
+            list_target_pitch = []
+            list_rc_pitch = []
+            list_pid_pitch = [] 
+
             # time
             list_time = []
             while True:
@@ -274,7 +371,10 @@ def keyboard_controller(screen, dict_):
                     CMDS['aux2'] = 1000
                     CMDS['throttle'] = 1000
 
-                    with open('data.json', 'w') as f:
+                    # Получите текущую дату и время
+                    current_time = time.localtime(time.time())
+                    current_date = time.strftime('%Y-%m-%d_%H-%M-%S', current_time)
+                    with open(f'./data/pid_data/data_{current_date}.json', 'w') as f:
                         data = {"list_time":list_time, 
                         
                                 "list_rc_thr":list_rc_thr, 
@@ -345,10 +445,12 @@ def keyboard_controller(screen, dict_):
                 # SLOW MSG processing (user GUI)
                 #
                 if ARMED == autopilot == dict_["init_tracker"] == True:
-                        
-                    # throttle
+                      
+                    dt = time.time()-start_time  
+                    # THROTTLE
                     
-                    pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"])        
+#                    pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"], dt)    
+                    pid_output_throttle = pid_throttle.compute(dict_["z_target"], dict_["z_current"], dt)     
                     if 1000 <= CMDS['throttle']+pid_output_throttle <= 1900:
                         CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
                     list_target_thr.append(dict_["z_target"]-dict_["z_current"])
@@ -356,23 +458,34 @@ def keyboard_controller(screen, dict_):
                     list_pid_thr.append([Kp_z, Ki_z, Kd_z])
 
 
-                    # yaw
+                    # YAW
 
                     # CMDS['throttle'] = 1250 
-                    pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"]) 
+#                    pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"], dt)
+                    pid_output_yaw = pid_yaw.compute(dict_["y_target"], dict_["y_current"], dt)  
                     CMDS['yaw'] = CMDS['yaw'] + pid_output_yaw
                     list_target_yaw.append(dict_["y_target"]-dict_["y_current"])
                     list_rc_yaw.append(CMDS['yaw'])
                     list_pid_yaw.append([Kp_y, Ki_y, Kd_y])
 
-                    # roll
+                    # ROLL
 
-                    pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"]) 
+#                    pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"], dt)
+                    pid_output_roll = pid_roll.compute(dict_["y_target"], dict_["y_current"], dt)  
                     #CMDS['roll'] = CMDS['roll'] + pid_output_roll
                     list_target_roll.append(dict_["y_target"]-dict_["y_current"])
                     list_rc_roll.append(CMDS['yaw'])
                     list_pid_roll.append([Kp_y, Ki_y, Kd_y])
 
+
+                    # PITCH
+#                    pid_output_pitch = pid_pitch.update(dict_["z_target"], dict_["z_current"], dt)
+                    pid_output_pitch = pid_pitch.compute(dict_["z_target"], dict_["z_current"], dt)
+                    #CMDS['pitch'] = CMDS['pitch'] + pid_output_pitch
+                    #CMDS['pitch'] = 1700
+                    list_target_pitch.append(dict_["z_target"]-dict_["z_current"])
+                    list_rc_pitch.append(CMDS['pitch'])
+                    list_pid_pitch.append([Kp_z, Ki_z, Kd_z])
 
                     # time
                     l_time = time.time()-start_time
@@ -381,10 +494,7 @@ def keyboard_controller(screen, dict_):
 
                     cursor_msg = f'Init tracker is True, {CMDS["throttle"]}, target pos: {dict_["z_target"]}, corrent: {dict_["z_current"]}, {pid_output_throttle}, Target Kp: {Kp_z}'
                     # cursor_msg = f'Init tracker is True, {CMDS["yaw"]}, target pos: {dict_["y_target"]}, corrent: {dict_["y_current"]}, {pid_output_yaw}, Target Kp_y: {Kp_y}'
-                
-
-                    # pitch 
-                    #CMDS['pitch'] = 1700
+#                    cursor_msg = f'Init tracker is True, {pid_throttle.kp}, {pid_throttle.kd}, {pid_throttle.ki}'
 
                 screen.addstr(7, 100, "Start track: {}".format(str(dict_["init_tracker"])), curses.A_BOLD)
                 screen.clrtoeol()                
@@ -491,7 +601,10 @@ def keyboard_controller(screen, dict_):
     finally:
         screen.addstr(5, 0, "Disconneced from the FC!")
         screen.clrtoeol()
-
+        pid_pitch.stop()
+        pid_yaw.stop()
+        pid_throttle.stop()
+        pid_roll.stop()
 def image_task(dict_):
     # Создание сокета
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -499,6 +612,7 @@ def image_task(dict_):
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
     # host_ip = '10.42.0.1'
+    host_ip = '192.168.1.130'
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -510,7 +624,7 @@ def image_task(dict_):
     
     k_scale = 1.0 #  yolo+sort/csrt/kcf
 #    k_scale = 0.8
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
     data = b""
@@ -582,6 +696,7 @@ def image_task(dict_):
                         pressed_activate_key_track += 1
                         if pressed_activate_key_track == 1:
                             lib_start.init_tracker(_img, bbox_OIU, A = True, B = True)
+                            lib_start.init_NanoTrack(_img, bbox_OIU)
                             init_tracker = True
                     else:
                         if pressed_activate_key_track > 2:
@@ -604,15 +719,15 @@ if __name__ == '__main__':
         dict_["init_tracker"] = False
         dict_["controller_init_tracker"] = False
         # run the thread
-        # ~ thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
-        # ~ thread1.start() 
+        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
+        thread1.start() 
                 
         thread2 = Process(target=image_task, args=(dict_,), daemon=True)
         thread2.start() 
         
         # wait for the thread to finish
         print('Waiting for the thread...')
-        # ~ thread1.join()  
+        thread1.join()  
         thread2.join()    
         
 

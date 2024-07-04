@@ -351,6 +351,7 @@ class TrackerLib(object):
 
 
     def process_img_server_NanoTrack(self, img, init_tracker):
+        #print (img.shape)
         img_center = self.get_center(img, 0, 0, img.shape[1], img.shape[0])
         if self.init_switch == True or init_tracker == True:
             # Обновление трекера CSRT
@@ -361,6 +362,19 @@ class TrackerLib(object):
             
             # получить из поток NPU (NanoTrack)
             outputs_NanoTrack = self.NanoTracker.track(img)
+                
+            if 'polygon' in outputs_NanoTrack:
+                polygon = np.array(outputs_NanoTrack['polygon']).astype(np.int32)
+                cv2.polylines(img, [polygon.reshape((-1, 1, 2))],
+                              True, (0, 255, 0), 3)
+                mask = ((outputs_NanoTrack['mask'] > cfg.TRACK.MASK_THERSHOLD) * 255)
+                mask = mask.astype(np.uint8)
+                mask = np.stack([mask, mask * 255, mask]).transpose(1, 2, 0)
+                frame = cv2.addWeighted(img, 0.77, mask, 0.23, -1)
+            else:
+                bbox = list(map(int, outputs_NanoTrack['bbox']))
+                self.image_process(img, bbox, img_center, color_border_box = (255, 0, 35))           
+                #self.last_bbox = bbox
 
             # Взвешивание результатов трекинга
             if csrt_success and kcf_success:                
@@ -386,20 +400,8 @@ class TrackerLib(object):
                 self.image_process(img, bbox, img_center)
                 self.last_bbox = bbox
                 self.Error_track = "A"
-            
-                
-            if 'polygon' in outputs_NanoTrack:
-                polygon = np.array(outputs_NanoTrack['polygon']).astype(np.int32)
-                cv2.polylines(img, [polygon.reshape((-1, 1, 2))],
-                              True, (0, 255, 0), 3)
-                mask = ((outputs_NanoTrack['mask'] > cfg.TRACK.MASK_THERSHOLD) * 255)
-                mask = mask.astype(np.uint8)
-                mask = np.stack([mask, mask * 255, mask]).transpose(1, 2, 0)
-                frame = cv2.addWeighted(img, 0.77, mask, 0.23, -1)
-            else:
-                bbox = list(map(int, outputs_NanoTrack['bbox']))
-                self.image_process(img, bbox, img_center, color_border_box = (255, 0, 35))           
-                 
+
+
         #self.state = 0
         return img, self.obj_center, img_center
 
@@ -429,7 +431,6 @@ class TrackerLib(object):
             if self.state > 1:
                 if sum(self.bbox[-2:]) > 10:
                     if first_frame:
-                        print ("----------------->")
                         cv2.rectangle(img, self.bbox, (255, 0, 0), 10)
                         tracker.init(img, self.bbox)
                         first_frame = False
