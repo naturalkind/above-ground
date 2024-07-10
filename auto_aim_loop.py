@@ -164,43 +164,7 @@ class AdaptivePIDController:
 #################################
 
 
-def run_curses(dict_):
-    result=1
-
-    try:
-        # get the curses screen window
-        screen = curses.initscr()
-
-        # turn off input echoing
-        curses.noecho()
-
-        # respond to keys immediately (don't wait for enter)
-        curses.cbreak()
-
-        # non-blocking
-        screen.timeout(0)
-
-        # map arrow keys to special values
-        screen.keypad(True)
-
-        screen.addstr(1, 0, "Press 'q' to quit, 'r' to reboot, 'a' to arm, 'd' to disarm, 's' start flight and arrow keys to control altitude", curses.A_BOLD)
-        
-        result = keyboard_controller(screen, dict_)
-    finally:
-        # shut down cleanly
-        curses.nocbreak(); screen.keypad(0); curses.echo()
-        curses.endwin()
-        if result==1:
-            print("An error occurred... probably the serial port is not available ;)")
-
-def value_limit(output, limit):
-    '''Set the value not exceed the limited value'''
-    if abs(output) > limit:
-        return limit*int(output/abs(output))
-    else:
-        return output 
-
-def keyboard_controller(screen, dict_):
+def keyboard_controller(dict_):
     # PID up 
 
     ##########
@@ -277,13 +241,9 @@ def keyboard_controller(screen, dict_):
     height = 0.0
     # "print" doesn't work with curses, use addstr instead
     try:
-        screen.addstr(15, 0, "Connecting to the FC...")
         with MSPy(device=SERIAL_PORT, loglevel='WARNING', baudrate=115200) as board:
             if board == 1: # an error occurred...
                 return 1
-            screen.addstr(15, 0, "Connecting to the FC... connected!")
-            screen.clrtoeol()
-            screen.move(1,0)
 
             average_cycle = deque([0]*NO_OF_CYCLES_AVERAGE_GUI_TIME)
 
@@ -306,13 +266,6 @@ def keyboard_controller(screen, dict_):
             warn_voltage = board.BATTERY_CONFIG['vbatwarningcellvoltage']*cellCount
             max_voltage = board.BATTERY_CONFIG['vbatmaxcellvoltage']*cellCount
 
-            screen.addstr(15, 0, "apiVersion: {}".format(board.CONFIG['apiVersion']))
-            screen.clrtoeol()
-            screen.addstr(15, 50, "flightControllerIdentifier: {}".format(board.CONFIG['flightControllerIdentifier']))
-            screen.addstr(16, 0, "flightControllerVersion: {}".format(board.CONFIG['flightControllerVersion']))
-            screen.addstr(16, 50, "boardIdentifier: {}".format(board.CONFIG['boardIdentifier']))
-            screen.addstr(17, 0, "boardName: {}".format(board.CONFIG['boardName']))
-            
             slow_msgs = cycle(['MSP_ANALOG', 'MSP_STATUS_EX', 'MSP_MOTOR', 'MSP_RC', 'MSP_RX_MAP', 
                                'MSP_FEATURE_CONFIG'])
 
@@ -351,87 +304,11 @@ def keyboard_controller(screen, dict_):
             list_time = []
             while True:
                 start_time = time.time()
-                char = screen.getch() # get keypress
-                curses.flushinp() # flushes buffer
-                
 
                 local_fast_read_imu() 
                 local_fast_read_attitude()
                 local_fast_read_altitude()
    
-                #
-                # Key input processing
-                #
-
-                #
-                # KEYS (NO DELAYS)
-                #
-                if char == ord('q') or char == ord('Q'):
-                    break
-                elif char == ord('a') or char == ord('A'):
-                    cursor_msg = 'Sending Arm command...'
-                    CMDS['aux2'] = 1500
-                elif char == ord('d') or char == ord('D'):
-                    cursor_msg = 'Sending Disarm command...'
-                    CMDS['aux2'] = 1000
-                    CMDS['throttle'] = 1000
-
-                    # Получите текущую дату и время
-                    current_time = time.localtime(time.time())
-                    current_date = time.strftime('%Y-%m-%d_%H-%M-%S', current_time)
-                    with open(f'./data/pid_data/data_{current_date}.json', 'w') as f:
-                        data = {"list_time":list_time, 
-                        
-                                "list_rc_thr":list_rc_thr, 
-                                "list_target_thr":list_target_thr,
-                                "list_pid_thr":list_pid_thr,
-
-                                "list_target_yaw":list_target_yaw,
-                                "list_rc_yaw":list_rc_yaw,
-                                "list_pid_yaw":list_pid_yaw,
-                                
-                                "list_target_roll":list_target_roll,
-                                "list_rc_roll":list_rc_roll,
-                                "list_pid_roll":list_pid_roll                                
-                                }
-                        json.dump(data, f)
-
-                elif char == ord('r') or char == ord('R'):
-                    screen.addstr(3, 0, 'Sending Reboot command...')
-                    screen.clrtoeol()
-                    board.reboot()
-                    time.sleep(0.5)
-                    break
-                    
-                elif char == ord('w') or char == ord('W'):
-                    CMDS['throttle'] = CMDS['throttle'] + 10 if CMDS['throttle'] + 10 <= 2000 else CMDS['throttle']
-                    cursor_msg = 'W Key - throttle(+):{}'.format(CMDS['throttle'])
-
-                # Ручное управление PID
-                elif char == 259:
-                    # Kp += 0.001
-                    # Create a PID controller object throttle
-                    # pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) # throttle
-
-                    # Yaw
-                    Kp_y += 0.001
-                    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y)
-                elif char == 258:
-
-                    # Kp -= 0.001
-                    # Create a PID controller object throttle
-                    # pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) # throttle
-
-                    # Yaw
-                    Kp_y -= 0.001
-                    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y)
-                    
-                # Управление двигателями принудительно
-                
-#                elif char == ord('z') or char == ord('Z'):
-#                    board.send_RAW_MOTORS(data = [1100, 1100, 1100, 1100, 0, 0, 0, 0])
-#                elif char == ord('x') or char == ord('X'):
-#                    board.send_RAW_MOTORS(data = [0, 0, 0, 0, 0, 0, 0, 0])
 
 
                 #
@@ -520,8 +397,6 @@ def keyboard_controller(screen, dict_):
                     # board.send_RAW_RC([1500 + roll, 1500 + pitch, throttle, 1500, 1000, 1000, 1000, 1000])
 
 
-                screen.addstr(8, 50, "Start track: {}".format(str(dict_["init_tracker"])), curses.A_BOLD)
-                screen.clrtoeol()                
                   
                 if (time.time()-last_slow_msg_time) >= SLOW_MSGS_LOOP_TIME:
                     last_slow_msg_time = time.time()
@@ -543,48 +418,28 @@ def keyboard_controller(screen, dict_):
                         elif voltage >= max_voltage:
                             voltage_msg = "VOLTAGE TOO HIGH"
 
-                        screen.addstr(18, 0, "Battery Voltage: {:2.2f}V".format(board.ANALOG['voltage']))
-                        screen.clrtoeol()
-                        screen.addstr(18, 24, voltage_msg, curses.A_BOLD + curses.A_BLINK)
-                        screen.clrtoeol()
 
                     elif next_msg == 'MSP_STATUS_EX':
                         ARMED = board.bit_check(board.CONFIG['mode'],0)
-                        screen.addstr(5, 0, "ARMED: {}".format(ARMED), curses.A_BOLD)
-                        screen.clrtoeol()
 
                         error_type = board.process_armingDisableFlags(board.CONFIG['armingDisableFlags'])
                         if "RXLOSS" in error_type:
-                            screen.addstr(5, 50, f"armingDisableFlags: {error_type}, MSP ON")
                             """
                             переключение на msp
                             """
+                            print (error_type)
+                            
                         else:
-                            screen.addstr(5, 50, "armingDisableFlags: {}".format(error_type))
-                        screen.clrtoeol()
-
-                        screen.addstr(6, 0, "cpuload: {}".format(board.CONFIG['cpuload']))
-                        screen.clrtoeol()
-                        screen.addstr(6, 50, "cycleTime: {}".format(board.CONFIG['cycleTime']))
-                        screen.clrtoeol()
-
-                        screen.addstr(7, 0, "mode: {}".format(board.CONFIG['mode']))
-                        screen.clrtoeol()
+                            pass
                         mode = board.process_mode(board.CONFIG['mode'])
+                        print (mode)
                         if 'MSP OVERRIDE' in mode:
                             autopilot = True
                             CMDS['aux3'] = 1500
-#                            CMDS['aux2'] = 1500
-                            screen.addstr(7, 50, "Autopilot ON Flight Mode: {}".format(mode))
                         else:
                             autopilot = False
-#                            CMDS['aux2'] = 1000
-                            screen.addstr(7, 50, "Autopilot OFF Flight Mode: {}".format(mode))
-                        screen.clrtoeol()
                     elif next_msg == 'MSP_MOTOR':
-                        screen.addstr(19, 0, "Motor Values: {}".format(board.MOTOR_DATA))
-                        screen.clrtoeol()
-
+                        pass
                     elif next_msg == 'MSP_RC':
                         if board.RC['channels'][7] == 2011:
                             # зафиксировать обьект
@@ -599,22 +454,9 @@ def keyboard_controller(screen, dict_):
                             CMDS['pitch'] = board.RC['channels'][1]
                             CMDS['roll'] = board.RC['channels'][0]  
 #                            CMDS['aux2'] = 1500
-                        screen.addstr(20, 0, "RC Channels Values: {}".format(board.RC['channels']))
-                        screen.addstr(21, 0, f"RC Channels Client: {[CMDS[ki] for ki in CMDS_ORDER]}")
-                        screen.clrtoeol()
 
                     elif next_msg == 'MSP_FEATURE_CONFIG':
-                        screen.addstr(22, 0, "C: {}".format(board.FEATURE_CONFIG['features'][3])) 
-                        screen.addstr(23, 0, "C: {}".format(board.FEATURE_CONFIG['features'][14])) 
-                        screen.clrtoeol()
-                    screen.addstr(17, 50, "GUI cycleTime: {0:2.2f}ms (average {1:2.2f}Hz)".format((last_cycleTime)*1000,
-                                  (sum(average_cycle)/len(average_cycle))))
-                    screen.clrtoeol()
-                                                                            
-                    screen.addstr(3, 0, cursor_msg)
-                    screen.addstr(4, 0, cursor_msg1)
-                    screen.clrtoeol()
-                    
+                        pass
                     
                 end_time = time.time()
                 last_cycleTime = end_time-start_time
@@ -625,8 +467,7 @@ def keyboard_controller(screen, dict_):
                 average_cycle.popleft()
 
     finally:
-        screen.addstr(5, 0, "Disconneced from the FC!")
-        screen.clrtoeol()
+        pass
         # pid_pitch.stop()
         # pid_yaw.stop()
         # pid_throttle.stop()
@@ -656,7 +497,8 @@ def image_task(dict_):
     data = b""
     init_tracker = False
     client_socket = False
-    size_box = 50
+    size_box = 30
+    size_box_nano = 30 + 20
     pressed_activate_key_track = 0
     #lib_start.init_yolo()
     while True:
@@ -671,9 +513,6 @@ def image_task(dict_):
                     #_img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])
                     _img, obj_center, img_center = lib_start.process_img_server_NanoTrack(frame, dict_["init_tracker"])  
 
-                    area_OIU = [img_center[0]-size_box, img_center[1]-size_box, img_center[0]+size_box, img_center[1]+size_box]
-                    area_OIU = [int(d) for d in area_OIU]
-                    bbox_OIU = [area_OIU[0], area_OIU[1], area_OIU[2]-area_OIU[0], area_OIU[3]-area_OIU[1]]
                     
                     # Сжатие кадра в формат JPEG
                     _, img = cv2.imencode('.jpg', _img, encode_param)
@@ -721,8 +560,15 @@ def image_task(dict_):
                     if dict_["controller_init_tracker"]:
                         pressed_activate_key_track += 1
                         if pressed_activate_key_track == 1:
+                            area_OIU = [img_center[0]-size_box, img_center[1]-size_box, img_center[0]+size_box, img_center[1]+size_box]
+                            area_OIU_Nano = [img_center[0]-size_box_nano, img_center[1]-size_box_nano, img_center[0]+size_box_nano, img_center[1]+size_box_nano]
+                            area_OIU = [int(d) for d in area_OIU]
+                            area_OIU_Nano =  [int(d) for d in area_OIU_Nano]
+                            bbox_OIU = [area_OIU[0], area_OIU[1], area_OIU[2]-area_OIU[0], area_OIU[3]-area_OIU[1]]
+                            bbox_OIU_Nano = [area_OIU_Nano[0], area_OIU_Nano[1], area_OIU_Nano[2]-area_OIU_Nano[0], area_OIU_Nano[3]-area_OIU_Nano[1]]
+                            
                             lib_start.init_tracker(_img, bbox_OIU, A = True, B = True)
-                            lib_start.init_NanoTrack(_img, bbox_OIU)
+                            lib_start.init_NanoTrack(_img, bbox_OIU_Nano)
                             init_tracker = True
                     else:
                         if pressed_activate_key_track > 2:
@@ -745,7 +591,7 @@ if __name__ == '__main__':
         dict_["init_tracker"] = False
         dict_["controller_init_tracker"] = False
         # run the thread
-        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
+        thread1 = Process(target=keyboard_controller, args=(dict_,), daemon=True)              
         thread1.start() 
                 
         thread2 = Process(target=image_task, args=(dict_,), daemon=True)

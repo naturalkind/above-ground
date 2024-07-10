@@ -202,12 +202,12 @@ class TrackerLib(object):
                     self.image_process(img, bbox, img_center)
                     self.last_bbox = bbox
                     self.Error_track = "B"
-                else:
-                    if self.Error_track == False:
-                        #self.Error_track = True
-                        # self.init_tracker(img, self.last_bbox)
-                        self.image_process(img, self.last_bbox, img_center)
-                        print ("TrackerLib Error")
+                # else:
+                    # if self.Error_track == False:
+                    #     #self.Error_track = True
+                    #     # self.init_tracker(img, self.last_bbox)
+                    #     self.image_process(img, self.last_bbox, img_center)
+                    #     print ("TrackerLib Error")
 
             # FPS варианты
             #fps = cv2.getTickFrequency()/(cv2.getTickCount()-timer)
@@ -310,9 +310,9 @@ class TrackerLib(object):
         return img, self.obj_center, img_center
 
     # прицел
-    def aim_visual(self, img, 
-                   size_box = 70,
-                   _size = 30,
+    def aim_visual_old(self, img, 
+                   size_box = 50,
+                   _size = 20,
                    line_box = 3,
                    color = [1,152,117],
                    full = False):
@@ -349,6 +349,38 @@ class TrackerLib(object):
             img[size_0-_size:size_0, size_3:size_3+line_box,:] = color
         return img
 
+    def aim_visual(self, img, size_box=50, corner_size=20, line_thickness=3, color=(1, 152, 117), full=False):
+        height, width = img.shape[:2]
+        center_y, center_x = height // 2, width // 2
+        top = center_y - size_box
+        bottom = center_y + size_box
+        left = center_x - size_box
+        right = center_x + size_box
+
+        if full:
+            # Рисуем полный прямоугольник
+            cv2.rectangle(img, (left, top), (right, bottom), color, line_thickness)
+            cv2.rectangle(img, (left, top), (right, bottom), (255,0,0), 1)
+        else:
+            # Рисуем углы прямоугольника
+            corners = [ (left, top),  # Левый верхний
+                        (right, top),  # Правый верхний
+                        (right, bottom),  # Правый нижний
+                        (left, bottom)  # Левый нижний
+                      ]
+
+            for x, y in corners:
+                if x == left:
+                    cv2.line(img, (x, y), (x + corner_size, y), color, line_thickness)
+                else:
+                    cv2.line(img, (x, y), (x - corner_size, y), color, line_thickness)
+
+                if y == top:
+                    cv2.line(img, (x, y), (x, y + corner_size), color, line_thickness)
+                else:
+                    cv2.line(img, (x, y), (x, y - corner_size), color, line_thickness)
+
+        return img
 
     def process_img_server_NanoTrack(self, img, init_tracker):
         #print (img.shape)
