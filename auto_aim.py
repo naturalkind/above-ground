@@ -8,27 +8,28 @@ import os
 import sys
 import cv2
 import time
+import json
 import curses
 import socket
 import pickle
 import struct
+import numpy as np
 from tracker_lib import tracker_lib
 from multiprocessing import Process, Value, Array, Manager
 from collections import deque
 from itertools import cycle
 from yamspy import MSPy
-from threading import Thread
+from threading import Thread, Lock
 from filterpy.memory import FadingMemoryFilter
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
-import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 from scipy.signal import argrelextrema
-import json
 
-from scipy.optimize import minimize
+from concurrent.futures import ThreadPoolExecutor
 
+from collections import deque
 
 lib_start = tracker_lib.TrackerLib()
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
@@ -78,8 +79,43 @@ class PIDController:
 
 ##########################
 
+
+class PrioritizedExperience:
+    def __init__(self, capacity=1000):
+        self.buffer = deque(maxlen=capacity)
+        self.priorities = deque(maxlen=capacity)
+
+    def add(self, experience, priority):
+        self.buffer.append(experience)
+        self.priorities.append(priority)
+
+    def sample(self, batch_size):
+        probs = np.array(self.priorities) / sum(self.priorities)
+        indices = np.random.choice(len(self.buffer), batch_size, p=probs)
+        samples = [self.buffer[i] for i in indices]
+        return samples
+
+class AdamOptimizer:
+    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        self.lr = learning_rate
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
+        self.m = 0
+        self.v = 0
+        self.t = 0
+
+    def update(self, param, gradient):
+        self.t += 1
+        self.m = self.beta1 * self.m + (1 - self.beta1) * gradient
+        self.v = self.beta2 * self.v + (1 - self.beta2) * (gradient ** 2)
+        m_hat = self.m / (1 - self.beta1 ** self.t)
+        v_hat = self.v / (1 - self.beta2 ** self.t)
+        param -= self.lr * m_hat / (np.sqrt(v_hat) + self.epsilon)
+        return param
+
 class AdaptivePIDController:
-    def __init__(self, kp=1.0, ki=0.1, kd=0.05):
+    def __init__(self, kp=1.0, ki=0.1, kd=0.05, save_path='pid_params.json'):
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -87,78 +123,231 @@ class AdaptivePIDController:
         self.last_error = 0
         self.last_time = time.time()
         
+        self.save_path = save_path
+        self.load_parameters()
+        
         # Параметры экстремального поиска
-        self.a = 0.1  # Амплитуда возмущения
-        self.omega = 1.0  # Частота возмущения
-        self.gamma = 0.01  # Коэффициент обучения
+        self.a = 0.1
+        self.omega = 1.0
+        self.gamma = 0.01
         
         # Параметры обучения с подкреплением
-        self.q_values = np.zeros((3, 3))  # Q-таблица для P, I, D (увеличить, уменьшить, не менять)
-        self.epsilon = 0.1  # Вероятность исследования
-        self.alpha = 0.1  # Скорость обучения для Q-learning
+        self.q_values = np.zeros((3, 3))
+        self.epsilon = 0.1
+        self.alpha = 0.1
+        
+        # Параметры адаптивного шага обучения
+        self.learning_rate = 0.01
+        self.min_learning_rate = 0.001
+        self.max_learning_rate = 0.1
+        self.performance_window = []
+        self.window_size = 50
         
         self.running = True
+        self.optimization_interval = 0.1
+        self.performance_history = []
+        
+        # Блокировки для синхронизации
+        self.optimization_lock = Lock()
+        self.learning_params_lock = Lock()
+        self.learning_rate_lock = Lock()
+        
+        # Приоритетный опыт
+        self.experience_buffer = PrioritizedExperience()
+        
+        # Adam оптимизаторы
+        self.adam_kp = AdamOptimizer()
+        self.adam_ki = AdamOptimizer()
+        self.adam_kd = AdamOptimizer()
+        
+        # Асинхронная оптимизация
+        self.executor = ThreadPoolExecutor(max_workers=3)
+        
         self.optimization_thread = Thread(target=self.optimize_parameters)
         self.optimization_thread.start()
 
     def compute(self, current_value, target_value, dt):
-        current_time = time.time()
-        dt = current_time - self.last_time
-        
-        error = target_value - current_value
-        self.error_sum += error * dt
-        error_diff = (error - self.last_error) / dt if dt > 0 else 0
-        
-        output = (self.kp * error +
-                  self.ki * self.error_sum +
-                  self.kd * error_diff)
-        
-        self.last_error = error
-        self.last_time = current_time
-        
-        return output
+        try:
+            current_time = time.time()
+            dt = current_time - self.last_time
+            
+            error = target_value - current_value
+            self.error_sum += error * dt
+            error_diff = (error - self.last_error) / dt if dt > 0 else 0
+            
+            output = (self.kp * error +
+                      self.ki * self.error_sum +
+                      self.kd * error_diff)
+            
+            self.last_error = error
+            self.last_time = current_time
+            
+            return output
+        except Exception as e:
+            print(f"Error in compute method: {e}")
+            return 0
 
+    def adapt_learning_rate(self):
+        with self.learning_rate_lock:
+            if len(self.performance_window) >= self.window_size:
+                performance_trend = np.mean(self.performance_window[-10:]) - np.mean(self.performance_window[:10])
+                if performance_trend > 0:
+                    self.learning_rate = min(self.max_learning_rate, self.learning_rate * 1.05)
+                else:
+                    self.learning_rate = max(self.min_learning_rate, self.learning_rate * 0.95)
+
+    def adapt_optimization_frequency(self):
+        with self.optimization_lock:
+            recent_performance = np.mean(self.performance_history[-10:])
+            if recent_performance > -0.05:  # Если производительность хорошая
+                self.optimization_interval = min(1.0, self.optimization_interval * 1.1)
+            else:
+                self.optimization_interval = max(0.01, self.optimization_interval * 0.9)
+
+    def adapt_window_size(self):
+        with self.learning_rate_lock:
+            if len(self.performance_history) > 100:
+                performance_variance = np.var(self.performance_history[-100:])
+                if performance_variance < 0.001:
+                    self.window_size = max(10, self.window_size - 1)
+                else:
+                    self.window_size = min(100, self.window_size + 1)
+
+    def adapt_extremum_seeking_params(self):
+        with self.optimization_lock:
+            recent_performance = np.mean(self.performance_history[-20:])
+            if recent_performance > -0.01:
+                self.a *= 0.95  # Уменьшаем амплитуду возмущения
+                self.omega *= 1.05  # Увеличиваем частоту возмущения
+            else:
+                self.a = min(0.5, self.a * 1.05)
+                self.omega = max(0.1, self.omega * 0.95)
+
+    def update_performance_history(self, performance):
+        alpha = 0.1  # Коэффициент сглаживания
+        if not self.performance_history:
+            self.performance_history.append(performance)
+        else:
+            smoothed_performance = alpha * performance + (1 - alpha) * self.performance_history[-1]
+            self.performance_history.append(smoothed_performance)
+
+    def adapt_q_learning_rate(self):
+        with self.learning_params_lock:
+            recent_performance = np.mean(self.performance_history[-20:])
+            if recent_performance > -0.01:
+                self.alpha = max(0.01, self.alpha * 0.99)
+            else:
+                self.alpha = min(0.5, self.alpha * 1.01)
+
+    def async_optimize(self):
+        self.executor.submit(self.adapt_learning_rate)
+        self.executor.submit(self.adapt_optimization_frequency)
+        self.executor.submit(self.adapt_extremum_seeking_params)
+        self.executor.submit(self.adapt_window_size)
+        self.executor.submit(self.adapt_q_learning_rate)
 
     def optimize_parameters(self):
         t = 0
         while self.running:
-            # Экстремальный поиск
-            perturbation = self.a * np.sin(self.omega * t)
-            self.kp += perturbation
-            
-            # Измерение производительности (предполагаем, что меньше ошибка - лучше)
-            performance = -abs(self.last_error)
-            
-            # Обновление параметров
-            gradient_estimate = performance * perturbation
-            self.kp += self.gamma * gradient_estimate
-            
-            # Q-learning для Ki и Kd
-            for param in ['ki', 'kd']:
-                if np.random.random() < self.epsilon:
-                    action = np.random.choice(3)  # 0: уменьшить, 1: не менять, 2: увеличить
-                else:
-                    action = np.argmax(self.q_values[0 if param == 'ki' else 1])
+            try:
+                # Экстремальный поиск для Kp
+                perturbation = self.a * np.sin(self.omega * t)
+                gradient_kp = self.last_error * perturbation
+                self.kp = self.adam_kp.update(self.kp, gradient_kp)
                 
-                old_value = getattr(self, param)
-                if action == 0:
-                    setattr(self, param, old_value * 0.99)
-                elif action == 2:
-                    setattr(self, param, old_value * 1.01)
+                # Измерение производительности
+                performance = -abs(self.last_error)
+                self.update_performance_history(performance)
+                self.performance_window.append(performance)
+                if len(self.performance_window) > self.window_size:
+                    self.performance_window.pop(0)
                 
-                new_performance = -abs(self.last_error)
-                reward = new_performance - performance
+                # Q-learning для Kp, Ki и Kd
+                for param_index, param in enumerate(['kp', 'ki', 'kd']):
+                    if np.random.random() < self.epsilon:
+                        action = np.random.choice(3)
+                    else:
+                        action = np.argmax(self.q_values[param_index])
+                    
+                    old_value = getattr(self, param)
+                    with self.learning_rate_lock:
+                        if action == 0:
+                            setattr(self, param, old_value * (1 - self.learning_rate))
+                        elif action == 2:
+                            setattr(self, param, old_value * (1 + self.learning_rate))
+                    
+                    new_performance = -abs(self.last_error)
+                    reward = new_performance - performance
+                    
+                    experience = (param_index, action, reward)
+                    priority = abs(reward) + 0.01
+                    self.experience_buffer.add(experience, priority)
                 
-                # Обновление Q-значений
-                old_q = self.q_values[0 if param == 'ki' else 1][action]
-                self.q_values[0 if param == 'ki' else 1][action] += self.alpha * (reward - old_q)
+                if len(self.experience_buffer.buffer) >= 32:
+                    batch = self.experience_buffer.sample(32)
+                    for exp in batch:
+                        param_index, action, reward = exp
+                        old_q = self.q_values[param_index][action]
+                        self.q_values[param_index][action] += self.alpha * (reward - old_q)
+                
+                self.async_optimize()
+
+                t += self.optimization_interval
+                time.sleep(self.optimization_interval)
+                
+                # Сохранение параметров
+                if t % 10 == 0:
+                    self.save_parameters()
             
-            t += 0.1
-            time.sleep(0.1)  # Пауза для снижения нагрузки на CPU
+            except Exception as e:
+                print(f"Error in optimization loop: {e}")
+                time.sleep(1)
+
+    def save_parameters(self):
+        params = {
+            'kp': self.kp,
+            'ki': self.ki,
+            'kd': self.kd,
+            'q_values': self.q_values.tolist(),
+            'epsilon': self.epsilon,
+            'alpha': self.alpha,
+            'learning_rate': self.learning_rate,
+            'a': self.a,
+            'omega': self.omega,
+            'window_size': self.window_size,
+            'optimization_interval': self.optimization_interval
+        }
+        try:
+            with open(self.save_path, 'w') as f:
+                json.dump(params, f)
+        except Exception as e:
+            print(f"Error saving parameters: {e}")
+
+    def load_parameters(self):
+        if os.path.exists(self.save_path):
+            try:
+                with open(self.save_path, 'r') as f:
+                    params = json.load(f)
+                self.kp = params['kp']
+                self.ki = params['ki']
+                self.kd = params['kd']
+                self.q_values = np.array(params['q_values'])
+                self.epsilon = params['epsilon']
+                self.alpha = params['alpha']
+                self.learning_rate = params['learning_rate']
+                self.a = params['a']
+                self.omega = params['omega']
+                self.window_size = params['window_size']
+                self.optimization_interval = params['optimization_interval']
+                print("Parameters loaded successfully")
+            except Exception as e:
+                print(f"Error loading parameters: {e}")
 
     def stop(self):
         self.running = False
         self.optimization_thread.join()
+        self.executor.shutdown()
+        self.save_parameters()
 
 
 #################################
@@ -463,7 +652,7 @@ def keyboard_controller(screen, dict_):
 
                     # короткая версия
                     # Управление дроном
-                    CMDS['throttle'] = int(np.clip(1500 + pid_output_throttle, 1000, 1680))  # Базовое значение 1500 для висения
+                    CMDS['throttle'] = int(np.clip(1500 + pid_output_throttle, 1000, 1680))  # Базовое значение 1500 для подьема 
 
 
 
