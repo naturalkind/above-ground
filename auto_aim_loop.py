@@ -93,7 +93,7 @@ class AdaptivePIDController:
         self.gamma = 0.01  # Коэффициент обучения
         
         # Параметры обучения с подкреплением
-        self.q_values = np.zeros((3, 3))  # Q-таблица для P, I, D (увеличить, уменьшить, не менять)
+        self.q_values = np.zeros((3, 3))  # Q-таблица для P, I, D (уменьшить, не менять, увеличить)
         self.epsilon = 0.1  # Вероятность исследования
         self.alpha = 0.1  # Скорость обучения для Q-learning
         
@@ -118,27 +118,26 @@ class AdaptivePIDController:
         
         return output
 
-
     def optimize_parameters(self):
         t = 0
         while self.running:
-            # Экстремальный поиск
+            # Экстремальный поиск для Kp
             perturbation = self.a * np.sin(self.omega * t)
             self.kp += perturbation
             
-            # Измерение производительности (предполагаем, что меньше ошибка - лучше)
+            # Измерение производительности
             performance = -abs(self.last_error)
             
-            # Обновление параметров
+            # Обновление Kp
             gradient_estimate = performance * perturbation
             self.kp += self.gamma * gradient_estimate
             
-            # Q-learning для Ki и Kd
-            for param in ['ki', 'kd']:
+            # Q-learning для Kp, Ki и Kd
+            for param_index, param in enumerate(['kp', 'ki', 'kd']):
                 if np.random.random() < self.epsilon:
                     action = np.random.choice(3)  # 0: уменьшить, 1: не менять, 2: увеличить
                 else:
-                    action = np.argmax(self.q_values[0 if param == 'ki' else 1])
+                    action = np.argmax(self.q_values[param_index])
                 
                 old_value = getattr(self, param)
                 if action == 0:
@@ -150,8 +149,8 @@ class AdaptivePIDController:
                 reward = new_performance - performance
                 
                 # Обновление Q-значений
-                old_q = self.q_values[0 if param == 'ki' else 1][action]
-                self.q_values[0 if param == 'ki' else 1][action] += self.alpha * (reward - old_q)
+                old_q = self.q_values[param_index][action]
+                self.q_values[param_index][action] += self.alpha * (reward - old_q)
             
             t += 0.1
             time.sleep(0.1)  # Пауза для снижения нагрузки на CPU
