@@ -849,7 +849,7 @@ def image_task(dict_):
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
 #    host_ip = '10.42.0.1'
-    host_ip = '192.168.1.97'
+    host_ip = '192.168.1.181'
     print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
@@ -961,18 +961,18 @@ if __name__ == '__main__':
         sensor_proc.start()
         
         # run the thread
-        thread1 = Process(target=run_curses, args=(dict_, ), daemon=True)              
-        thread1.start()  
+#        thread1 = Process(target=run_curses, args=(dict_, ), daemon=True)              
+#        thread1.start()  
  
                 
-#        thread2 = Process(target=image_task, args=(dict_,), daemon=True)
-#        thread2.start() 
+        thread2 = Process(target=image_task, args=(dict_,), daemon=True)
+        thread2.start() 
         
         # wait for the thread to finish
         print('Waiting for the thread...')
         sensor_proc.join()   
-        thread1.join()  
-#        thread2.join() 
+#        thread1.join()  
+        thread2.join() 
         
         
 

@@ -37,7 +37,7 @@ def init_sensor():
     time.sleep(0.1)
     write_byte_data(VL53L0X_ADDRESS, SOFT_RESET_GO2_SOFT_RESET_N, 0x01)
     time.sleep(0.1)
-    print("Sensor initialized")
+    #print("Sensor initialized")
     #write_byte_data(VL53L0X_ADDRESS, 0x91, 0x00) # В этом режиме датчик выполняет одно измерение при каждом запросе
     #write_byte_data(VL53L0X_ADDRESS, 0x91, 0x3c) # В этом режиме датчик автоматически выполняет измерения с определенной частотой
 
@@ -46,9 +46,9 @@ def init_sensor():
 def check_sensor():
     model_id = read_byte_data(VL53L0X_ADDRESS, IDENTIFICATION_MODEL_ID)
     if model_id != 0xEE:
-        print(f"Unexpected model ID: {model_id}")
+        #print(f"Unexpected model ID: {model_id}")
         return False
-    print("Sensor check passed")
+    #print("Sensor check passed")
     return True
 
 def measure_distance():
