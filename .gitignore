@@ -3,6 +3,7 @@
 *.blend
 *.fbx
 *.log
+output.txt
 env
 venv
 data/pid_data/*

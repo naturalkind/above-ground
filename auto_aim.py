@@ -4,6 +4,9 @@
 3 при нажатии запускать выбор цели
 
 """  
+import contextlib
+import io
+
 import os
 import sys
 import cv2
@@ -483,7 +486,7 @@ def keyboard_controller(screen, dict_):
     CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2', 'aux3', 'aux4']
     autopilot = False
     ARMED = False
-    height = 1000.0
+    height = 40.0
     filtered_distance = 0
     
     try:
@@ -843,6 +846,7 @@ def keyboard_controller(screen, dict_):
         # pid_throttle.stop()
         # pid_roll.stop()
 def image_task(dict_):
+    #sys.stdout = open('output.txt', 'w')
     # Создание сокета
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -947,6 +951,7 @@ def image_task(dict_):
     
     # Close the server socket
     server_socket.close()
+
     
 num = Value('d', 0.0)    
 if __name__ == '__main__':
@@ -957,13 +962,13 @@ if __name__ == '__main__':
         dict_["controller_init_tracker"] = False
         dict_["filtered_distance"] = 0
         
+        # VL53L0X
         sensor_proc = Process(target=sensor_process, args=(dict_,))
         sensor_proc.start()
         
         # run the thread
-#        thread1 = Process(target=run_curses, args=(dict_, ), daemon=True)              
-#        thread1.start()  
- 
+        thread1 = Process(target=run_curses, args=(dict_, ), daemon=True)              
+        thread1.start()  
                 
         thread2 = Process(target=image_task, args=(dict_,), daemon=True)
         thread2.start() 
@@ -971,7 +976,7 @@ if __name__ == '__main__':
         # wait for the thread to finish
         print('Waiting for the thread...')
         sensor_proc.join()   
-#        thread1.join()  
+        thread1.join()  
         thread2.join() 
         
         

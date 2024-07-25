@@ -66,6 +66,16 @@ github: `https://gist.github.com/narate/d3f001c97e1c981a59f94cd76f041140`
     nmcli connection delete <connection name>
     ```
 
+#### Настройка порта i2c5-m3 VL53L0X sensor
+
+    ```
+    sudo orangepi-config
+    system->Hardware->i2c5-m3
+
+    ls -l /dev/i2c*
+    sudo i2cdetect -y 5
+    sudo chmod 777 /dev/i2c-5
+```
 #### Установка Betaflight ARM
 
 1. Установить NODE
