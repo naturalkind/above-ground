@@ -14,8 +14,9 @@ import socket
 import pickle
 import struct
 import numpy as np
+import queue
 from tracker_lib import tracker_lib
-from multiprocessing import Process, Value, Array, Manager
+from multiprocessing import Process, Value, Array, Manager, Queue
 from collections import deque
 from itertools import cycle
 from yamspy import MSPy
@@ -30,6 +31,7 @@ from scipy.signal import argrelextrema
 from concurrent.futures import ThreadPoolExecutor
 
 from collections import deque
+import VL53L0X
 
 lib_start = tracker_lib.TrackerLib()
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
@@ -389,6 +391,22 @@ def value_limit(output, limit):
     else:
         return output 
 
+def sensor_process(dict_):
+    sensor = VL53L0X.VL53L0XSensor()
+    sensor.start()
+    try:
+        while True:
+            data = sensor.get_data()
+            if data:
+                msg_type, content = data
+                if msg_type == "RESULT":
+                    dict_['filtered_distance'] = content['filtered_distance']
+            #time.sleep(0.01)
+    except KeyboardInterrupt:
+        print("Program stopped by user")
+    finally:
+        sensor.stop()
+
 def keyboard_controller(screen, dict_):
     # PID up 
 
@@ -455,7 +473,9 @@ def keyboard_controller(screen, dict_):
             'aux3':     1000,
             'aux4':     1000
             }
-
+    ########################################################
+    # "print" doesn't work with curses, use addstr instead
+    ########################################################
     # This order is the important bit: it will depend on how your flight controller is configured.
     # Below it is considering the flight controller is set to use AETR.
     # The names here don't really matter, they just need to match what is used for the CMDS dictionary.
@@ -463,8 +483,9 @@ def keyboard_controller(screen, dict_):
     CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2', 'aux3', 'aux4']
     autopilot = False
     ARMED = False
-    height = 0.0
-    # "print" doesn't work with curses, use addstr instead
+    height = 1000.0
+    filtered_distance = 0
+    
     try:
         screen.addstr(15, 0, "Connecting to the FC...")
         with MSPy(device=SERIAL_PORT, loglevel='WARNING', baudrate=115200) as board:
@@ -547,6 +568,8 @@ def keyboard_controller(screen, dict_):
                 local_fast_read_imu() 
                 local_fast_read_attitude()
                 local_fast_read_altitude()
+   
+                filtered_distance = dict_["filtered_distance"]
    
                 #
                 # Key input processing
@@ -644,15 +667,13 @@ def keyboard_controller(screen, dict_):
                     # THROTTLE
                     
 #                    pid_output_throttle = pid_throttle.update(dict_["z_target"], dict_["z_current"], dt)   
-                    pid_output_throttle = pid_throttle.compute(dict_["z_target"], dict_["z_current"], dt)  
+#                    pid_output_throttle = pid_throttle.compute(dict_["z_target"], dict_["z_current"], dt)  
 
-                    # длинная версия    
-                    # if 1000 <= CMDS['throttle']+pid_output_throttle <= 1700:
-                    #     CMDS['throttle'] = CMDS['throttle'] + pid_output_throttle 
-
-                    # короткая версия
+                    # VL53L0X altitude
+                    pid_output_throttle = pid_throttle.compute(filtered_distance, height, dt)  
+                    
                     # Управление дроном
-                    CMDS['throttle'] = int(np.clip(1500 + pid_output_throttle, 1000, 1680))  # Базовое значение 1500 для подьема 
+                    CMDS['throttle'] = int(np.clip(1500 + pid_output_throttle, 1000, 1800))  # Базовое значение 1500 для подьема 
 
 
 
@@ -795,6 +816,7 @@ def keyboard_controller(screen, dict_):
                     elif next_msg == 'MSP_FEATURE_CONFIG':
                         screen.addstr(22, 0, "C: {}".format(board.FEATURE_CONFIG['features'][3])) 
                         screen.addstr(23, 0, "C: {}".format(board.FEATURE_CONFIG['features'][14])) 
+                        screen.addstr(24, 0, f"Высота датчика: {filtered_distance}") 
                         screen.clrtoeol()
                     screen.addstr(17, 50, "GUI cycleTime: {0:2.2f}ms (average {1:2.2f}Hz)".format((last_cycleTime)*1000,
                                   (sum(average_cycle)/len(average_cycle))))
@@ -933,17 +955,25 @@ if __name__ == '__main__':
         dict_ = manager.dict()
         dict_["init_tracker"] = False
         dict_["controller_init_tracker"] = False
+        dict_["filtered_distance"] = 0
+        
+        sensor_proc = Process(target=sensor_process, args=(dict_,))
+        sensor_proc.start()
+        
         # run the thread
-        thread1 = Process(target=run_curses, args=(dict_,), daemon=True)              
-        thread1.start() 
+        thread1 = Process(target=run_curses, args=(dict_, ), daemon=True)              
+        thread1.start()  
+ 
                 
-        thread2 = Process(target=image_task, args=(dict_,), daemon=True)
-        thread2.start() 
+#        thread2 = Process(target=image_task, args=(dict_,), daemon=True)
+#        thread2.start() 
         
         # wait for the thread to finish
         print('Waiting for the thread...')
+        sensor_proc.join()   
         thread1.join()  
-        thread2.join()    
+#        thread2.join() 
+        
         
 
   
