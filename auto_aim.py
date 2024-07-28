@@ -6,7 +6,6 @@
 """  
 import contextlib
 import io
-
 import os
 import sys
 import cv2
@@ -27,18 +26,28 @@ from threading import Thread, Lock
 from filterpy.memory import FadingMemoryFilter
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from scipy.signal import argrelextrema
-
 from concurrent.futures import ThreadPoolExecutor
-
-from collections import deque
 import VL53L0X
+import logging
+from logging.handlers import RotatingFileHandler
+from scipy.optimize import curve_fit
+
+# Настройка логирования в файл
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+log_file = 'drone_system.log'
+log_handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=2)
+log_handler.setFormatter(log_formatter)
+logger = logging.getLogger('DroneSystem')
+logger.setLevel(logging.INFO)
+logger.addHandler(log_handler)
+
+# ----------------------------->
 
 lib_start = tracker_lib.TrackerLib()
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-
 
 
 # Max periods for:
@@ -404,9 +413,12 @@ def sensor_process(dict_):
                 msg_type, content = data
                 if msg_type == "RESULT":
                     dict_['filtered_distance'] = content['filtered_distance']
-            #time.sleep(0.01)
+                    logger.info(f"Sensor distance: {content['filtered_distance']:.2f}")
+            time.sleep(0.005)
     except KeyboardInterrupt:
-        print("Program stopped by user")
+        sensor.stop()
+#    except Exception as e:
+#        logger.error(f"Error in sensor process: {str(e)}")
     finally:
         sensor.stop()
 
@@ -442,6 +454,9 @@ def keyboard_controller(screen, dict_):
     ##########
     # throttle PID
     ##########
+    Kp_z = 7.0 #42
+    Ki_z = 0.3 #5
+    Kd_z = 3.0
 
     # лучший 8  4400Ah
     # Kp_z = 0.00074#42
@@ -450,9 +465,9 @@ def keyboard_controller(screen, dict_):
 
 
     # лучший 5 5500Ah
-    Kp_z = 0.0005#42
-    Ki_z = 0.00005#5
-    Kd_z = 0.4435
+#    Kp_z = 0.0005#42
+#    Ki_z = 0.00005#5
+#    Kd_z = 0.4435
 
     # genetic PID
     # Kp_z = 0.0048
@@ -486,7 +501,7 @@ def keyboard_controller(screen, dict_):
     CMDS_ORDER = ['roll', 'pitch', 'throttle', 'yaw', 'aux1', 'aux2', 'aux3', 'aux4']
     autopilot = False
     ARMED = False
-    height = 40.0
+    height = 0.0
     filtered_distance = 0
     
     try:
@@ -594,22 +609,33 @@ def keyboard_controller(screen, dict_):
                     # Получите текущую дату и время
                     current_time = time.localtime(time.time())
                     current_date = time.strftime('%Y-%m-%d_%H-%M-%S', current_time)
-                    with open(f'./data/pid_data/data_{current_date}.json', 'w') as f:
-                        data = {"list_time":list_time, 
-                        
-                                "list_rc_thr":list_rc_thr, 
-                                "list_target_thr":list_target_thr,
-                                "list_pid_thr":list_pid_thr,
 
-                                "list_target_yaw":list_target_yaw,
-                                "list_rc_yaw":list_rc_yaw,
-                                "list_pid_yaw":list_pid_yaw,
-                                
-                                "list_target_roll":list_target_roll,
-                                "list_rc_roll":list_rc_roll,
-                                "list_pid_roll":list_pid_roll                                
-                                }
-                        json.dump(data, f)
+                    # Создаем директорию, если она не существует
+                    directory = './data/pid_data/'
+                    os.makedirs(directory, exist_ok=True)
+
+                    # Теперь открываем файл для записи
+                    file_path = os.path.join(directory, f'data_{current_date}.json')
+                    try:
+                        with open(file_path, 'w') as f:
+                            data = {
+                                "list_time": list_time,
+                                "list_rc_thr": list_rc_thr,
+                                "list_target_thr": list_target_thr,
+                                "list_pid_thr": list_pid_thr,
+                                "list_target_yaw": list_target_yaw,
+                                "list_rc_yaw": list_rc_yaw,
+                                "list_pid_yaw": list_pid_yaw,
+                                "list_target_roll": list_target_roll,
+                                "list_rc_roll": list_rc_roll,
+                                "list_pid_roll": list_pid_roll
+                            }
+                            json.dump(data, f)
+                        cursor_msg = f'Data saved to {file_path}'
+                        cursor_msg1 = ""
+                    except Exception as e:
+                        cursor_msg = f'Error saving data: {str(e)}'
+
 
                 elif char == ord('r') or char == ord('R'):
                     screen.addstr(3, 0, 'Sending Reboot command...')
@@ -626,20 +652,18 @@ def keyboard_controller(screen, dict_):
                 elif char == 259:
                     # Kp += 0.001
                     # Create a PID controller object throttle
-                    # pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) # throttle
-
-                    # Yaw
-                    Kp_y += 0.001
-                    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y)
+                    # pid_ = PIDController(Kp, Ki, Kd) 
+                    
+                    height += 10
+                    
                 elif char == 258:
-
                     # Kp -= 0.001
                     # Create a PID controller object throttle
-                    # pid_throttle = PIDController(Kp_z, Ki_z, Kd_z) # throttle
+                    # pid_ = PIDController(Kp, Ki, Kd) 
+                    
+                    height -= 10
 
-                    # Yaw
-                    Kp_y -= 0.001
-                    pid_yaw = PIDController(Kp_y, Ki_y, Kd_y)
+    
                     
                 # Управление двигателями принудительно
                 
@@ -686,17 +710,16 @@ def keyboard_controller(screen, dict_):
 
                     # YAW
 
-                    # CMDS['throttle'] = 1250 
                     pid_output_yaw = pid_yaw.update(dict_["y_target"], dict_["y_current"], dt)
+                    #CMDS['yaw'] = CMDS['yaw'] + int(np.clip(pid_output_yaw, -500, 500))
+                    
                     # pid_output_yaw = pid_yaw.compute(dict_["y_target"], dict_["y_current"], dt) 
-
                     #CMDS['yaw'] = CMDS['yaw'] + pid_output_yaw
-                    CMDS['yaw'] = CMDS['yaw'] + int(np.clip(pid_output_yaw, -500, 500))
+                    
 
                     list_target_yaw.append(dict_["y_target"]-dict_["y_current"])
                     list_rc_yaw.append(CMDS['yaw'])
                     list_pid_yaw.append([Kp_y, Ki_y, Kd_y])
-
                     # ROLL
 
                     pid_output_roll = pid_roll.update(dict_["y_target"], dict_["y_current"], dt)
@@ -721,10 +744,7 @@ def keyboard_controller(screen, dict_):
                     list_time.append(l_time)
 
                     cursor_msg = f'Throttle: {CMDS["throttle"]}, PID: {pid_throttle.kp}, {pid_throttle.kd}, {pid_throttle.ki}, OUT: {pid_output_throttle}'
-                    cursor_msg1 =f'Yaw: {CMDS["yaw"]}, PID: {pid_yaw.kp}, {pid_yaw.kd}, {pid_yaw.ki}, OUT: {pid_output_yaw}'
-                    # cursor_msg = f'Init tracker is True, {CMDS["throttle"]}, target pos: {dict_["z_target"]}, corrent: {dict_["z_current"]}, {pid_output_throttle}, Target Kp: {Kp_z}'
-                    # cursor_msg = f'Init tracker is True, {CMDS["yaw"]}, target pos: {dict_["y_target"]}, corrent: {dict_["y_current"]}, {pid_output_yaw}, Target Kp_y: {Kp_y}'
-#                    cursor_msg = f'Init tracker is True, {pid_throttle.kp}, {pid_throttle.kd}, {pid_throttle.ki}'
+                    cursor_msg1 = f'Yaw: {CMDS["yaw"]}, PID: {pid_yaw.kp}, {pid_yaw.kd}, {pid_yaw.ki}, OUT: {pid_output_yaw}'
 
                     # Управление дроном пример #2
                     # roll = int(np.clip(output_x, -500, 500))
@@ -800,17 +820,23 @@ def keyboard_controller(screen, dict_):
 
                     elif next_msg == 'MSP_RC':
                         if board.RC['channels'][7] == 2011:
+                            if dict_["controller_init_tracker"] == False:
+                                height = filtered_distance + 40.0  
+                                CMDS['throttle'] = board.RC['channels'][3]
                             # зафиксировать обьект
                             dict_["controller_init_tracker"] = True
                             CMDS['aux2'] = 1500
+
                         else:
+                            
                             # открепить обьект
                             dict_["controller_init_tracker"] = False
-                        if autopilot == False:    
-                            CMDS['throttle'] = board.RC['channels'][3]
-                            CMDS['yaw'] = board.RC['channels'][2]
-                            CMDS['pitch'] = board.RC['channels'][1]
-                            CMDS['roll'] = board.RC['channels'][0]  
+                            
+#                        if autopilot == False:    
+#                            CMDS['throttle'] = board.RC['channels'][3]
+#                            CMDS['yaw'] = board.RC['channels'][2]
+#                            CMDS['pitch'] = board.RC['channels'][1]
+#                            CMDS['roll'] = board.RC['channels'][0]  
 #                            CMDS['aux2'] = 1500
                         screen.addstr(20, 0, "RC Channels Values: {}".format(board.RC['channels']))
                         screen.addstr(21, 0, f"RC Channels Client: {[CMDS[ki] for ki in CMDS_ORDER]}")
@@ -819,7 +845,7 @@ def keyboard_controller(screen, dict_):
                     elif next_msg == 'MSP_FEATURE_CONFIG':
                         screen.addstr(22, 0, "C: {}".format(board.FEATURE_CONFIG['features'][3])) 
                         screen.addstr(23, 0, "C: {}".format(board.FEATURE_CONFIG['features'][14])) 
-                        screen.addstr(24, 0, f"Высота датчика: {filtered_distance}") 
+                        screen.addstr(24, 0, f"Высота датчика: {filtered_distance}, желаемая высота: {height}") 
                         screen.clrtoeol()
                     screen.addstr(17, 50, "GUI cycleTime: {0:2.2f}ms (average {1:2.2f}Hz)".format((last_cycleTime)*1000,
                                   (sum(average_cycle)/len(average_cycle))))
@@ -845,6 +871,119 @@ def keyboard_controller(screen, dict_):
         # pid_yaw.stop()
         # pid_throttle.stop()
         # pid_roll.stop()
+        
+
+class TargetPredictor:
+    def __init__(self, history_size=10):
+        self.history = deque(maxlen=history_size)
+        self.last_time = time.time()
+
+    def update(self, position):
+        current_time = time.time()
+        dt = current_time - self.last_time
+        self.history.append((position, dt))
+        self.last_time = current_time
+
+    def predict(self, time_ahead):
+        if len(self.history) < 2:
+            return self.history[-1][0] if self.history else None
+    
+        velocities = []
+        for i in range(1, len(self.history)):
+            dx = self.history[i][0] - self.history[i-1][0]
+            dt = self.history[i][1]
+            velocities.append(dx / dt if dt > 0 else 0)
+
+        avg_velocity = sum(velocities) / len(velocities)
+        last_position = self.history[-1][0]
+        return last_position + avg_velocity * time_ahead
+
+
+class AdaptiveTargetPredictor:
+    def __init__(self, history_size=20, min_samples=5):
+        self.history = deque(maxlen=history_size)
+        self.last_time = time.time()
+        self.min_samples = min_samples
+        self.model = 'linear'
+        self.coeffs = None
+
+    def update(self, position):
+        current_time = time.time()
+        self.history.append((np.array(position), current_time))
+        
+        if len(self.history) >= self.min_samples:
+            self._fit_model()
+
+    def _fit_model(self):
+        times = np.array([t for _, t in self.history]) - self.history[0][1]
+        positions = np.array([p for p, _ in self.history])
+
+        # Убедимся, что positions - это 2D массив
+        if positions.ndim == 1:
+            positions = positions.reshape(-1, 1)
+
+        if self.model == 'linear':
+            self.coeffs = [np.polyfit(times, positions[:, i], 1) for i in range(positions.shape[1])]
+        elif self.model == 'quadratic':
+            self.coeffs = [np.polyfit(times, positions[:, i], 2) for i in range(positions.shape[1])]
+        elif self.model == 'exponential':
+            def exp_func(x, a, b, c):
+                return a * np.exp(b * x) + c
+            try:
+                self.coeffs = [curve_fit(exp_func, times, positions[:, i])[0] for i in range(positions.shape[1])]
+            except:
+                # If exponential fitting fails, fallback to linear
+                self.model = 'linear'
+                self.coeffs = [np.polyfit(times, positions[:, i], 1) for i in range(positions.shape[1])]
+
+        # Adaptive model selection based on fit error
+        errors = {
+            'linear': np.mean([np.mean((positions[:, i] - np.polyval(np.polyfit(times, positions[:, i], 1), times))**2) for i in range(positions.shape[1])]),
+            'quadratic': np.mean([np.mean((positions[:, i] - np.polyval(np.polyfit(times, positions[:, i], 2), times))**2) for i in range(positions.shape[1])]),
+        }
+        if self.model == 'exponential':
+            errors['exponential'] = np.mean([np.mean((positions[:, i] - (self.coeffs[i][0] * np.exp(self.coeffs[i][1] * times) + self.coeffs[i][2]))**2) for i in range(positions.shape[1])])
+
+        self.model = min(errors, key=errors.get)
+
+    def predict(self, time_ahead):
+        if len(self.history) < self.min_samples:
+            return self.history[-1][0] if self.history else None
+
+        current_time = time.time()
+        prediction_time = current_time + time_ahead - self.history[0][1]
+
+        if self.model == 'linear':
+            return np.array([np.polyval(coeff, prediction_time) for coeff in self.coeffs])
+        elif self.model == 'quadratic':
+            return np.array([np.polyval(coeff, prediction_time) for coeff in self.coeffs])
+        elif self.model == 'exponential':
+            return np.array([coeff[0] * np.exp(coeff[1] * prediction_time) + coeff[2] for coeff in self.coeffs])
+
+    def get_confidence(self):
+        if len(self.history) < self.min_samples:
+            return 0
+
+        times = np.array([t for _, t in self.history]) - self.history[0][1]
+        positions = np.array([p for p, _ in self.history])
+        
+        if positions.ndim == 1:
+            positions = positions.reshape(-1, 1)
+
+        if self.model == 'linear':
+            predicted = np.array([np.polyval(coeff, times) for coeff in self.coeffs]).T
+        elif self.model == 'quadratic':
+            predicted = np.array([np.polyval(coeff, times) for coeff in self.coeffs]).T
+        elif self.model == 'exponential':
+            predicted = np.array([coeff[0] * np.exp(coeff[1] * times) + coeff[2] for coeff in self.coeffs]).T
+
+        mse = np.mean((positions - predicted)**2)
+        max_error = np.max(np.abs(positions - predicted))
+        
+        confidence = 1 / (1 + mse)  # Normalize confidence between 0 and 1
+        return confidence
+
+        
 def image_task(dict_):
     #sys.stdout = open('output.txt', 'w')
     # Создание сокета
@@ -853,8 +992,9 @@ def image_task(dict_):
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
 #    host_ip = '10.42.0.1'
-    host_ip = '192.168.1.181'
-    print('Хост IP:', host_ip)
+    host_ip = '192.168.1.2'
+    logger.info(f'Хост IP: {host_ip}')
+    #print('Хост IP:', host_ip)
     port = 9999
     socket_address = (host_ip, port)
     # Привязка сокета
@@ -863,28 +1003,38 @@ def image_task(dict_):
     # Ожидание подключения клиента
     server_socket.listen(5)
     
-    k_scale = 1.0 #  yolo+sort/csrt/kcf
-#    k_scale = 0.8
+#    k_scale = 1.0 #  yolo+sort/csrt/kcf
+    k_scale = 0.7
     cap = cv2.VideoCapture(0)
-    print("Ожидание подключения клиента...")
     payload_size = struct.calcsize("Q")
     data = b""
     init_tracker = False
     client_socket = False
     size_box = 50
     pressed_activate_key_track = 0
+    
+    # предсказание цели 
+    # Версия 1
+#    predictor_0 = TargetPredictor()
+#    predictor_1 = TargetPredictor()
+        
+    # Версия 2
+    predictor = AdaptiveTargetPredictor()
+
     #lib_start.init_yolo()
+    logger.info("Ожидание подключения клиента...")
     while True:
         client_socket, addr = server_socket.accept()
         #print('Получено соединение от:', addr, client_socket)
+        logger.info(f'Получено соединение от: {addr}')
         try:
            while(cap.isOpened()):
 #                try:
                 (status, frame) = cap.read()
                 if status:
                     frame = cv2.resize(frame, (int(frame.shape[1]*k_scale), int(frame.shape[0]*k_scale)))
-                    #_img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])
-                    _img, obj_center, img_center = lib_start.process_img_server_NanoTrack(frame, dict_["init_tracker"])  
+                    _img, obj_center, img_center = lib_start.process_img_server(frame, dict_["init_tracker"])
+#                    _img, obj_center, img_center = lib_start.process_img_server_NanoTrack(frame, dict_["init_tracker"])  
 
                     area_OIU = [img_center[0]-size_box, img_center[1]-size_box, img_center[0]+size_box, img_center[1]+size_box]
                     area_OIU = [int(d) for d in area_OIU]
@@ -895,16 +1045,36 @@ def image_task(dict_):
                     
                     dict_["y_current"] = img_center[0]
                     dict_["z_current"] = img_center[1]
+                    
+                    # Версия 1
                     # Координаты центара обьекта
-                    dict_["y_target"] = obj_center[0]
-                    dict_["z_target"] = obj_center[1]
+#                    predictor_0.update(obj_center[0])
+#                    predicted_position_0 = predictor_0.predict(0.1)  # Предсказание на 100 мс вперед
+#                    
+#                    predictor_1.update(obj_center[1])
+#                    predicted_position_1 = predictor_1.predict(0.1)  # Предсказание на 100 мс вперед
+#                    
+#                    dict_["y_target"] = predicted_position_0
+#                    dict_["z_target"] = predicted_position_1
+
+#                    # Версия 2
+#                    # Обновление позиции объекта адаптивный способ
+                    predictor.update([obj_center[0], obj_center[1]])
+                    # Предсказание позиции через 0.5 секунды
+                    future_position = predictor.predict(0.5)
+                    # Получение уверенности в предсказании
+                    confidence = predictor.get_confidence()
+                    #print([obj_center[0], obj_center[1]], f"Predicted position: {future_position}, Confidence: {confidence}")
+                    dict_["y_target"] = future_position[0]
+                    dict_["z_target"] = future_position[1]
+                    
+
                     num.value = obj_center[1]
                     
                     # отправка данных
                     a = pickle.dumps([img, init_tracker])
                     message = struct.pack("Q", len(a)) + a
                     client_socket.sendall(message)
-                    
                     # получение данных
                     while len(data) < payload_size:
                         packet = client_socket.recv(4*1024)
@@ -927,8 +1097,9 @@ def image_task(dict_):
                     # включение выключение слежения cmd 
                     if state > 1:
                         if sum(bbox[-2:]) > 10:
-                            lib_start.init_tracker(_img, bbox, A = True, B = True)
-                            lib_start.init_NanoTrack(_img, bbox)
+                            lib_start.init_tracker(_img, bbox)
+#                            lib_start.NanoTracker.init(_img, bbox_OIU)
+
                             lib_start.state = 0
                             init_tracker = True
                             
@@ -936,8 +1107,8 @@ def image_task(dict_):
                     if dict_["controller_init_tracker"]:
                         pressed_activate_key_track += 1
                         if pressed_activate_key_track == 1:
-                            lib_start.init_tracker(_img, bbox_OIU, A = True, B = True)
-                            lib_start.init_NanoTrack(_img, bbox_OIU)
+                            lib_start.init_tracker(_img, bbox_OIU)
+#                            lib_start.NanoTracker.init(_img, bbox_OIU)
                             init_tracker = True
                     else:
                         if pressed_activate_key_track > 2:
@@ -946,9 +1117,10 @@ def image_task(dict_):
                     lib_start.init_switch = init_switch
                     dict_["init_tracker"] = init_tracker
         except ConnectionResetError:
-            print("Клиент отключился")
+            logger.warning("Клиент отключился")
             client_socket.close()
-    
+#        except Exception as e:
+#            logger.error(f"Error in image task: {str(e)}")    
     # Close the server socket
     server_socket.close()
 
@@ -974,11 +1146,18 @@ if __name__ == '__main__':
         thread2.start() 
         
         # wait for the thread to finish
-        print('Waiting for the thread...')
-        sensor_proc.join()   
-        thread1.join()  
-        thread2.join() 
-        
+        logger.info('Waiting for the threads...')
+        try:
+            sensor_proc.join()
+            thread1.join()
+            thread2.join()
+        except KeyboardInterrupt:
+            logger.info("Main process interrupted. Shutting down...")
+        finally:
+            sensor_proc.terminate()
+            thread1.terminate()
+            thread2.terminate()
+            logger.info("All processes terminated.")        
         
 
   

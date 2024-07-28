@@ -3,6 +3,7 @@
 *.blend
 *.fbx
 *.log
+drone_system.log
 output.txt
 env
 venv

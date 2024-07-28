@@ -227,13 +227,11 @@ class NnoTracker_RKNNLite(object):
                                     s_z, self.channel_average)
 
         back_T_in = z_crop.transpose((0,2,3,1))
-
         # self.Toutput = self.rknn_Tback.inference(inputs=[z_crop], data_format='nchw')
         self.Toutput = self.rknn_Tback.inference(inputs=[back_T_in])
+        #self.rknn_Tback.release()
 
-        self.rknn_Tback.release()
-
-    def track(self, img):
+    def update(self, img):
         """
         args:
             img(np.ndarray): BGR image
@@ -319,7 +317,16 @@ class NnoTracker_RKNNLite(object):
                 height]
 
         best_score = score[best_idx]
-        return {
-            'bbox': bbox,
-            'best_score': best_score
-        }
+#        return {
+#            'bbox': bbox,
+#            'best_score': best_score
+#        }
+        return best_score, bbox
+         
+    def __del__(self):
+        if hasattr(self, 'rknn_Tback'):
+            self.rknn_Tback.release()
+        if hasattr(self, 'rknn_Xback'):
+            self.rknn_Xback.release()
+        if hasattr(self, 'rknn_Head'):
+            self.rknn_Head.release()
