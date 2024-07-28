@@ -71,6 +71,25 @@ NO_OF_CYCLES_AVERAGE_GUI_TIME = 10
 SERIAL_PORT = "/dev/ttyACM0" # Linux
 #SERIAL_PORT = "COM5" # Windows
 
+def sensor_process(dict_):
+    sensor = VL53L0X.VL53L0XSensor()
+    sensor.start()
+    try:
+        while True:
+            data = sensor.get_data()
+            if data:
+                msg_type, content = data
+                if msg_type == "RESULT":
+                    dict_['filtered_distance'] = content['filtered_distance']
+                    logger.info(f"Sensor distance: {content['filtered_distance']:.2f}")
+            time.sleep(0.005)
+    except KeyboardInterrupt:
+        sensor.stop()
+    except Exception as e:
+        logger.error(f"Error in sensor process: {str(e)}")
+    finally:
+        sensor.stop()
+
 """
 Экземпляр PID-регулятора с определенными коэффициентами Kp, Ki, Kd. 
 """
@@ -314,7 +333,7 @@ class AdaptivePIDController:
                     self.save_parameters()
             
             except Exception as e:
-                print(f"Error in optimization loop: {e}")
+                #print(f"Error in optimization loop: {e}")
                 time.sleep(1)
 
     def save_parameters(self):
@@ -396,31 +415,6 @@ def run_curses(dict_):
         if result==1:
             print("An error occurred... probably the serial port is not available ;)")
 
-def value_limit(output, limit):
-    '''Set the value not exceed the limited value'''
-    if abs(output) > limit:
-        return limit*int(output/abs(output))
-    else:
-        return output 
-
-def sensor_process(dict_):
-    sensor = VL53L0X.VL53L0XSensor()
-    sensor.start()
-    try:
-        while True:
-            data = sensor.get_data()
-            if data:
-                msg_type, content = data
-                if msg_type == "RESULT":
-                    dict_['filtered_distance'] = content['filtered_distance']
-                    logger.info(f"Sensor distance: {content['filtered_distance']:.2f}")
-            time.sleep(0.005)
-    except KeyboardInterrupt:
-        sensor.stop()
-#    except Exception as e:
-#        logger.error(f"Error in sensor process: {str(e)}")
-    finally:
-        sensor.stop()
 
 def keyboard_controller(screen, dict_):
     # PID up 
@@ -1119,8 +1113,8 @@ def image_task(dict_):
         except ConnectionResetError:
             logger.warning("Клиент отключился")
             client_socket.close()
-#        except Exception as e:
-#            logger.error(f"Error in image task: {str(e)}")    
+        except Exception as e:
+            logger.error(f"Error in image task: {str(e)}")    
     # Close the server socket
     server_socket.close()
 
