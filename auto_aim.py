@@ -497,6 +497,9 @@ def keyboard_controller(screen, dict_):
     ARMED = False
     height = 0.0
     filtered_distance = 0
+    takeoff_phase = 'idle'
+    takeoff_start_time = None
+    init_altitude = None
     
     try:
         screen.addstr(15, 0, "Connecting to the FC...")
@@ -629,7 +632,12 @@ def keyboard_controller(screen, dict_):
                         cursor_msg1 = ""
                     except Exception as e:
                         cursor_msg = f'Error saving data: {str(e)}'
-
+                        
+                elif char == ord('t') or char == ord('T'):
+                    if ARMED and takeoff_phase == 'idle':
+                        takeoff_phase = 'ramp'
+                        takeoff_start_time = time.time()
+                        logger.info("Starting takeoff sequence")
 
                 elif char == ord('r') or char == ord('R'):
                     screen.addstr(3, 0, 'Sending Reboot command...')
@@ -643,21 +651,18 @@ def keyboard_controller(screen, dict_):
                     cursor_msg = 'W Key - throttle(+):{}'.format(CMDS['throttle'])
 
                 # Ручное управление PID
-                elif char == 259:
+                elif char == 259: # arrow up
                     # Kp += 0.001
                     # Create a PID controller object throttle
                     # pid_ = PIDController(Kp, Ki, Kd) 
-                    
                     height += 10
                     
-                elif char == 258:
+                elif char == 258: # arrow down
                     # Kp -= 0.001
                     # Create a PID controller object throttle
                     # pid_ = PIDController(Kp, Ki, Kd) 
-                    
                     height -= 10
 
-    
                     
                 # Управление двигателями принудительно
                 
@@ -783,6 +788,7 @@ def keyboard_controller(screen, dict_):
                         error_type = board.process_armingDisableFlags(board.CONFIG['armingDisableFlags'])
                         if "RXLOSS" in error_type:
                             screen.addstr(5, 50, f"armingDisableFlags: {error_type}, MSP ON")
+                            # Активация режима управления по MSP
                             """
                             переключение на msp
                             """
@@ -986,7 +992,7 @@ def image_task(dict_):
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
 #    host_ip = '10.42.0.1'
-    host_ip = '192.168.1.2'
+    host_ip = '192.168.1.100'
     logger.info(f'Хост IP: {host_ip}')
     #print('Хост IP:', host_ip)
     port = 9999
@@ -998,7 +1004,7 @@ def image_task(dict_):
     server_socket.listen(5)
     
 #    k_scale = 1.0 #  yolo+sort/csrt/kcf
-    k_scale = 0.7
+    k_scale = 0.6
     cap = cv2.VideoCapture(0)
     payload_size = struct.calcsize("Q")
     data = b""
