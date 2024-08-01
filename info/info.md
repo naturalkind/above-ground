@@ -232,7 +232,9 @@
 * https://github.com/betaflight/betaflight/issues/12790
 * https://github.com/betaflight/betaflight/issues/8292
 * https://github.com/AscendNTNU/msp_flightcontroller_interface
-
+* https://github.com/stronnag/msp_override
+* https://folk.ntnu.no/skoge/publications/2012/skogestad-improved-simc-pid/old-submitted/simcpid.pdf
+* https://github.com/thecognifly/YAMSPy/
 
 #### Интересно
 * https://habr.com/ru/articles/650013/

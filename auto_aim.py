@@ -56,6 +56,11 @@ SLOW_MSGS_LOOP_TIME = 1/5 # these messages take a lot of time slowing down the l
 
 NO_OF_CYCLES_AVERAGE_GUI_TIME = 10
 
+# Константы для автовзлета
+TAKEOFF_ALTITUDE = 600.0  # Целевая высота взлета в мм
+TAKEOFF_THRUST = 1400   # Начальная тяга для взлета
+TAKEOFF_RAMP_TIME = 2.0 # Время в секундах для увеличения тяги
+TAKEOFF_HOLD_TIME = 1.0 # Время удержания полной тяги перед переключением на PID
 
 #
 # On Linux, your serial port will probably be something like
@@ -80,8 +85,12 @@ def sensor_process(dict_):
             if data:
                 msg_type, content = data
                 if msg_type == "RESULT":
-                    dict_['filtered_distance'] = content['filtered_distance']
-                    logger.info(f"Sensor distance: {content['filtered_distance']:.2f}")
+                    if content['filtered_distance'] != None:
+                        dict_['filtered_distance'] = content['filtered_distance']
+                        logger.info(f"Sensor distance: {content['filtered_distance']:.2f}")
+                    else:
+                        dict_['filtered_distance'] = 2000.0
+                        logger.info(f"Sensor distance: {content['filtered_distance']}")
             time.sleep(0.005)
     except KeyboardInterrupt:
         sensor.stop()
@@ -148,7 +157,7 @@ class AdamOptimizer:
         return param
 
 class AdaptivePIDController:
-    def __init__(self, kp=1.0, ki=0.1, kd=0.05, save_path='pid_params.json'):
+    def __init__(self, kp=1.0, ki=0.1, kd=0.05, save_path='data/pid_params.json'):
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -448,14 +457,14 @@ def keyboard_controller(screen, dict_):
     ##########
     # throttle PID
     ##########
-    Kp_z = 7.0 #42
-    Ki_z = 0.3 #5
-    Kd_z = 3.0
+#    Kp_z = 7.0 #42
+#    Ki_z = 0.3 #5
+#    Kd_z = 3.0
 
     # лучший 8  4400Ah
-    # Kp_z = 0.00074#42
-    # Ki_z = 0.000031#5
-    # Kd_z = 0.297
+    Kp_z = 0.00074#42
+    Ki_z = 0.000031#5
+    Kd_z = 0.297
 
 
     # лучший 5 5500Ah
@@ -475,6 +484,7 @@ def keyboard_controller(screen, dict_):
 
 #    pid_pitch = PIDController(Kp_z, Ki_z, Kd_z) 
     pid_pitch = AdaptivePIDController(kp=Kp_z, ki=Ki_z, kd=Kd_z)
+    
     CMDS = {
             'roll':     1500,
             'pitch':    1500,
@@ -603,6 +613,7 @@ def keyboard_controller(screen, dict_):
                     CMDS['aux2'] = 1000
                     CMDS['throttle'] = 1000
 
+                    pid_throttle.stop()
                     # Получите текущую дату и время
                     current_time = time.localtime(time.time())
                     current_date = time.strftime('%Y-%m-%d_%H-%M-%S', current_time)
@@ -613,25 +624,26 @@ def keyboard_controller(screen, dict_):
 
                     # Теперь открываем файл для записи
                     file_path = os.path.join(directory, f'data_{current_date}.json')
-                    try:
-                        with open(file_path, 'w') as f:
-                            data = {
-                                "list_time": list_time,
-                                "list_rc_thr": list_rc_thr,
-                                "list_target_thr": list_target_thr,
-                                "list_pid_thr": list_pid_thr,
-                                "list_target_yaw": list_target_yaw,
-                                "list_rc_yaw": list_rc_yaw,
-                                "list_pid_yaw": list_pid_yaw,
-                                "list_target_roll": list_target_roll,
-                                "list_rc_roll": list_rc_roll,
-                                "list_pid_roll": list_pid_roll
-                            }
-                            json.dump(data, f)
-                        cursor_msg = f'Data saved to {file_path}'
-                        cursor_msg1 = ""
-                    except Exception as e:
-                        cursor_msg = f'Error saving data: {str(e)}'
+                    if len(list_time) > 60:
+                        try:
+                            with open(file_path, 'w') as f:
+                                data = {
+                                    "list_time": list_time,
+                                    "list_rc_thr": list_rc_thr,
+                                    "list_target_thr": list_target_thr,
+                                    "list_pid_thr": list_pid_thr,
+                                    "list_target_yaw": list_target_yaw,
+                                    "list_rc_yaw": list_rc_yaw,
+                                    "list_pid_yaw": list_pid_yaw,
+                                    "list_target_roll": list_target_roll,
+                                    "list_rc_roll": list_rc_roll,
+                                    "list_pid_roll": list_pid_roll
+                                }
+                                json.dump(data, f)
+                            cursor_msg = f'Data saved to {file_path}'
+                            cursor_msg1 = ""
+                        except Exception as e:
+                            cursor_msg = f'Error saving data: {str(e)}'
                         
                 elif char == ord('t') or char == ord('T'):
                     if ARMED and takeoff_phase == 'idle':
@@ -684,6 +696,38 @@ def keyboard_controller(screen, dict_):
 
                     # Работает
 #                    local_fast_msp_rc_cmd([CMDS[ki] for ki in CMDS_ORDER])
+
+
+
+                # Обработка взлета
+                if takeoff_phase != 'idle':
+                    current_time = time.time()
+                    if takeoff_phase == 'ramp':
+                        progress = (current_time - takeoff_start_time) / TAKEOFF_RAMP_TIME
+                        if progress < 1.0:
+                            CMDS['throttle'] = int(TAKEOFF_THRUST * progress)
+                            cursor_msg1 = f"ramp........"
+                        else:
+                            takeoff_phase = 'hold'
+                            takeoff_start_time = current_time
+                            cursor_msg1 = f"hold........"
+                        cursor_msg1 += str(CMDS['throttle'])
+                    elif takeoff_phase == 'hold':
+                        if current_time - takeoff_start_time < TAKEOFF_HOLD_TIME:
+                            CMDS['throttle'] = TAKEOFF_THRUST
+                        else:
+                            takeoff_phase = 'stabilize'
+                            init_altitude = dict_["filtered_distance"] + TAKEOFF_ALTITUDE
+                            logger.info(f"Takeoff complete. Stabilizing at altitude: {init_altitude}")
+                            cursor_msg1 = f"Takeoff complete. Stabilizing at altitude: {init_altitude}"
+
+
+                # PID-контроль высоты
+                if init_altitude is not None and takeoff_phase == 'stabilize':
+                    dt = time.time()-start_time
+                    pid_output = pid_throttle.compute(init_altitude, dict_["filtered_distance"], dt)
+                    CMDS['throttle'] = int(np.clip(1500 + pid_output, 1000, 1800))
+                    cursor_msg1 = f"Thr: {CMDS['throttle']}, PID out: {pid_output}, Stabilizing at altitude: {init_altitude}"
                 #
                 # SLOW MSG processing (user GUI)
                 #

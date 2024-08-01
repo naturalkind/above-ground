@@ -233,9 +233,31 @@ sudo chmod 777 reload_aim.sh
 ./reload_aim.sh
 screen -r python_curses_app
 ```
-6.
+6.   
 ```
 set msp_override_channels_mask = 111
 set msp_override_failsafe = ON
 save
 ```
+7.  
+```
+# определите имя вашего сетевого интерфейса командой/Обычно это что-то вроде eth0 или enp0s3
+ip a
+
+# конфигурация Netplan
+sudo nano /etc/netplan/01-netcfg.yaml
+
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses: [192.168.1.100/24]  # Используем текущий IP или выберите другой
+      gateway4: 192.168.1.1  # Укажите IP вашего роутера
+      nameservers:
+        addresses: [8.8.8.8, 8.8.4.4]
+
+sudo netplan apply
+```
+
