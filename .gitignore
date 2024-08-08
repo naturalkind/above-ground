@@ -3,10 +3,10 @@
 *.blend
 *.fbx
 *.log
-drone_system.log
 output.txt
 env
 venv
+dron_log/*
 data/pid_data/*
 __pycache__
 deep_v2/build

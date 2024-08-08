@@ -37,7 +37,7 @@ from scipy.optimize import curve_fit
 
 # Настройка логирования в файл
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-log_file = 'drone_system.log'
+log_file = 'dron_log/drone_system.log'
 log_handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=2)
 log_handler.setFormatter(log_formatter)
 logger = logging.getLogger('DroneSystem')

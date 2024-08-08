@@ -187,6 +187,8 @@ sudo apt install xterm
 2. `nano reload_aim.sh`
 ```
 sudo systemctl stop aim.service
+sudo systemctl daemon-reload
+sudo systemctl enable aim.service
 sudo systemctl start aim.service
 sleep 3
 sudo systemctl status aim.service
@@ -217,18 +219,13 @@ cd /home/orangepi/above-ground
 
 # Активируем виртуальное окружение Python
 source venv/bin/activate
-Xvfb :3 -ac -screen 0 1200x1200x24 &
-export TERM=xterm-256color
-export DISPLAY=:3
-sleep 3
-xterm -geometry 1200x1200 -e "python /home/orangepi/above-ground/auto_aim.py" &
-x11vnc -display :3 -forever -nopw -quiet
+
+# Запускаем программу
+python auto_aim.py
 
 ```
 5. 
 ```
-sudo systemctl enable aim.service
-sudo systemctl daemon-reload
 sudo chmod 777 reload_aim.sh
 ./reload_aim.sh
 screen -r python_curses_app
