@@ -183,6 +183,7 @@ desktop-file-validate betaflight-configurator.desktop
 sudo apt install x11vnc
 sudo apt install xvfb
 sudo apt install xterm
+sudo apt install tmux
 ```
 2. `nano reload_aim.sh`
 ```
@@ -204,8 +205,11 @@ Type=forking
 User=orangepi
 Environment="DISPLAY:3"
 Environment="TERM=xterm-256color"
-ExecStart=screen -dmS python_curses_app /home/orangepi/above-ground/auto_run.sh
-ExecStop=screen -S python_curses_app -X quit
+ExecStart=/usr/bin/tmux new-session -d -s python_app '/home/orangepi/above-ground/run_app.sh'
+ExecStop=/usr/bin/tmux kill-session -t python_app
+# вариант 2
+#ExecStart=screen -dmS python_curses_app /home/orangepi/above-ground/auto_run.sh
+#ExecStop=screen -S python_curses_app -X quit
 Restart=on-failure
 
 [Install]
@@ -214,23 +218,32 @@ WantedBy=graphical.target
 4. `nano /home/orangepi/above-ground/auto_run.sh`
 ```
 #!/bin/bash
-
 cd /home/orangepi/above-ground
-
 # Активируем виртуальное окружение Python
 source venv/bin/activate
-
+export TERM=xterm-256color
 # Запускаем программу
 python auto_aim.py
 
+# Вариант 2 
+#Xvfb :3 -ac +extension DPMS -screen 0 1200x700x8 &
+#export DISPLAY=:3
+#sleep 3
+#xterm -geometry 1200x1200 -bg black -fg green -fa 'Monospace' -fs 12 -e 'python /home/orangepi/above-ground/auto_aim.py' &
+#x11vnc -display :3 -forever -nopw -quiet
 ```
+> [!CAUTION]
+> Для подключения к VNC-серверу с Ubuntu 18, установить `sudo apt install tigervnc-viewer`
+> подключиться  вариан 2 `vncviewer 192.168.1.100:5900`
+> подключиться  вариан 1 `tmux attach-session -t python_app`
+
 5. 
 ```
 sudo chmod 777 reload_aim.sh
 ./reload_aim.sh
 screen -r python_curses_app
 ```
-6.   
+6. BF 4.5+
 ```
 set msp_override_channels_mask = 111
 set msp_override_failsafe = ON
