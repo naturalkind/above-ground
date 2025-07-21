@@ -1,0 +1,475 @@
+{
+  "nodes": [
+    {
+      "width": 72,
+      "height": 63,
+      "type": "axis",
+      "selected": false,
+      "id": "31",
+      "position": {
+        "x": 741.625,
+        "y": 1222.5
+      },
+      "data": {
+        "label": "roll",
+        "number": "0",
+        "output_invert": false,
+        "deadzone": "0"
+      },
+      "positionAbsolute": {
+        "x": 741.625,
+        "y": 1222.5
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "channel",
+      "selected": false,
+      "id": "32",
+      "position": {
+        "x": 740.125,
+        "y": 1084.5
+      },
+      "data": {
+        "label": "Roll",
+        "number": "1",
+        "crsf_max": 1984,
+        "crsf_min": 0,
+        "raw_max": 32767,
+        "raw_min": "-32768"
+      },
+      "positionAbsolute": {
+        "x": 740.125,
+        "y": 1084.5
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "channel",
+      "selected": false,
+      "id": "35",
+      "position": {
+        "x": 832.75,
+        "y": 1088
+      },
+      "data": {
+        "label": "Pitch",
+        "number": "2",
+        "crsf_max": 1984,
+        "crsf_min": 0,
+        "raw_max": 32767,
+        "raw_min": "-32768"
+      },
+      "positionAbsolute": {
+        "x": 832.75,
+        "y": 1088
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "axis",
+      "selected": false,
+      "id": "36",
+      "position": {
+        "x": 841.75,
+        "y": 1217.5
+      },
+      "data": {
+        "label": "pitch",
+        "number": "1",
+        "output_invert": false,
+        "deadzone": "0"
+      },
+      "positionAbsolute": {
+        "x": 841.75,
+        "y": 1217.5
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "channel",
+      "selected": false,
+      "id": "37",
+      "position": {
+        "x": 935.6875,
+        "y": 1081.8661464307963
+      },
+      "data": {
+        "label": "Throttle",
+        "number": "3",
+        "crsf_max": 1984,
+        "crsf_min": 0,
+        "raw_max": 32767,
+        "raw_min": "-32768"
+      },
+      "positionAbsolute": {
+        "x": 935.6875,
+        "y": 1081.8661464307963
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "axis",
+      "selected": false,
+      "id": "38",
+      "position": {
+        "x": 947.1875,
+        "y": 1225.75
+      },
+      "data": {
+        "label": "Throttle",
+        "number": "2",
+        "output_invert": false,
+        "deadzone": "0"
+      },
+      "positionAbsolute": {
+        "x": 947.1875,
+        "y": 1225.75
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "axis",
+      "selected": false,
+      "id": "39",
+      "position": {
+        "x": 1042.65625,
+        "y": 1220.75
+      },
+      "data": {
+        "label": "Yaw",
+        "number": "3",
+        "output_invert": false,
+        "deadzone": "0"
+      },
+      "positionAbsolute": {
+        "x": 1042.65625,
+        "y": 1220.75
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "channel",
+      "selected": false,
+      "id": "41",
+      "position": {
+        "x": 1044.15625,
+        "y": 1087.25
+      },
+      "data": {
+        "label": "Yaw",
+        "number": "4",
+        "crsf_max": 1984,
+        "crsf_min": 0,
+        "raw_max": 32767,
+        "raw_min": "-32768"
+      },
+      "positionAbsolute": {
+        "x": 1044.15625,
+        "y": 1087.25
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "axis",
+      "selected": false,
+      "id": "44",
+      "position": {
+        "x": 1143.0078125,
+        "y": 1227.75
+      },
+      "data": {
+        "label": "arm",
+        "number": "4",
+        "output_invert": false,
+        "deadzone": "0"
+      },
+      "positionAbsolute": {
+        "x": 1143.0078125,
+        "y": 1227.75
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "channel",
+      "selected": false,
+      "id": "45",
+      "position": {
+        "x": 1151.5078125,
+        "y": 1094.75
+      },
+      "data": {
+        "label": "arm",
+        "number": "5",
+        "crsf_max": 1984,
+        "crsf_min": 0,
+        "raw_max": 32767,
+        "raw_min": "-32768"
+      },
+      "positionAbsolute": {
+        "x": 1151.5078125,
+        "y": 1094.75
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "axis",
+      "selected": false,
+      "id": "46",
+      "position": {
+        "x": 1246.31640625,
+        "y": 1228
+      },
+      "data": {
+        "label": "angle",
+        "number": "5",
+        "output_invert": false,
+        "deadzone": "0"
+      },
+      "positionAbsolute": {
+        "x": 1246.31640625,
+        "y": 1228
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "channel",
+      "selected": false,
+      "id": "47",
+      "position": {
+        "x": 1257.31640625,
+        "y": 1092
+      },
+      "data": {
+        "label": "angle",
+        "number": "6",
+        "crsf_max": 1984,
+        "crsf_min": 0,
+        "raw_max": 32767,
+        "raw_min": "-32768"
+      },
+      "positionAbsolute": {
+        "x": 1257.31640625,
+        "y": 1092
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "tx",
+      "selected": false,
+      "id": "48",
+      "position": {
+        "x": 1030.9907482031213,
+        "y": 913.3976422976488
+      },
+      "data": {
+        "label": "BFPV 2G4Micro1W",
+        "port": "/dev/ttyUSB0"
+      },
+      "positionAbsolute": {
+        "x": 1030.9907482031213,
+        "y": 913.3976422976488
+      },
+      "dragging": false
+    },
+    {
+      "width": 72,
+      "height": 63,
+      "type": "gamepad",
+      "selected": false,
+      "id": "14",
+      "position": {
+        "x": 1228.9018204304284,
+        "y": 1415.0509541401955
+      },
+      "data": {
+        "label": "FPV Joystick Emulator",
+        "id": "c7f721"
+      },
+      "positionAbsolute": {
+        "x": 1228.9018204304284,
+        "y": 1415.0509541401955
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "type": "RemovableEdge",
+      "source": "31",
+      "sourceHandle": "out1",
+      "target": "32",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-31out1-32in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "36",
+      "sourceHandle": "out1",
+      "target": "35",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-36out1-35in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "38",
+      "sourceHandle": "out1",
+      "target": "37",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-38out1-37in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "39",
+      "sourceHandle": "out1",
+      "target": "41",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-39out1-41in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "44",
+      "sourceHandle": "out1",
+      "target": "45",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-44out1-45in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "46",
+      "sourceHandle": "out1",
+      "target": "47",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-46out1-47in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "32",
+      "sourceHandle": "out1",
+      "target": "48",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-32out1-48in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "35",
+      "sourceHandle": "out1",
+      "target": "48",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-35out1-48in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "37",
+      "sourceHandle": "out1",
+      "target": "48",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-37out1-48in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "41",
+      "sourceHandle": "out1",
+      "target": "48",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-41out1-48in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "45",
+      "sourceHandle": "out1",
+      "target": "48",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-45out1-48in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "47",
+      "sourceHandle": "out1",
+      "target": "48",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-47out1-48in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "14",
+      "sourceHandle": "out1",
+      "target": "31",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-14out1-31in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "14",
+      "sourceHandle": "out1",
+      "target": "36",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-14out1-36in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "14",
+      "sourceHandle": "out1",
+      "target": "38",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-14out1-38in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "14",
+      "sourceHandle": "out1",
+      "target": "39",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-14out1-39in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "14",
+      "sourceHandle": "out1",
+      "target": "44",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-14out1-44in1"
+    },
+    {
+      "type": "RemovableEdge",
+      "source": "14",
+      "sourceHandle": "out1",
+      "target": "46",
+      "targetHandle": "in1",
+      "id": "reactflow__edge-14out1-46in1"
+    }
+  ],
+  "viewport": {
+    "x": -468.8456418671037,
+    "y": -1214.1972691046112,
+    "zoom": 1.3717186073309282
+  },
+  "metadata": {
+    "details": {},
+    "key": "inputs_config"
+  }
+}
