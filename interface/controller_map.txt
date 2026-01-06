@@ -1,0 +1,9 @@
+[General]
+mode = elrs
+serial_port = /dev/ttyUSB0
+baud_rate = 921600
+joystick_index = 0
+euro_filter_enabled = True
+euro_min_cutoff = 1.0
+euro_beta = 0.1
+

@@ -11,3 +11,8 @@ data/pid_data/*
 __pycache__
 deep_v2/build
 YAMSPy
+cnnmodel.tar.xz
+dasiamrpn_kernel_cls1.onnx
+dasiamrpn_kernel_r1.onnx
+dasiamrpn_model.onnx
+
